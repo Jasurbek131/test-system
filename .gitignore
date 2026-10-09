@@ -5,3 +5,6 @@ frontend/dist/
 .idea/
 *.iml
 .vscode/
+
+# Darslik PDF lari (mualliflik huquqi) – faqat lokal
+books/
