@@ -1,0 +1,2130 @@
+{
+  "subject": "Karra",
+  "subjectDescription": "Karra jadvali: 2 dan 10 gacha sonlarni ko'paytirish",
+  "topics": [
+    {
+      "name": "2 karra",
+      "description": "2 ning karra jadvali: 2 × 1 dan 2 × 10 gacha",
+      "questions": [
+        {
+          "text": "2 × 1 = ?",
+          "explanation": "2 × 1 = 2. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "2",
+              "correct": true
+            },
+            {
+              "text": "5",
+              "correct": false
+            },
+            {
+              "text": "3",
+              "correct": false
+            },
+            {
+              "text": "1",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 2 = ?",
+          "explanation": "2 × 2 = 4. Bu 2 ni 2 marta qo'shish degani: 2 + 2 = 4.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "4",
+              "correct": true
+            },
+            {
+              "text": "6",
+              "correct": false
+            },
+            {
+              "text": "14",
+              "correct": false
+            },
+            {
+              "text": "3",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 3 = ?",
+          "explanation": "2 × 3 = 6. Bu 2 ni 3 marta qo'shish degani: 2 + 2 + 2 = 6.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "8",
+              "correct": false
+            },
+            {
+              "text": "5",
+              "correct": false
+            },
+            {
+              "text": "6",
+              "correct": true
+            },
+            {
+              "text": "4",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 4 = ?",
+          "explanation": "2 × 4 = 8. Bu 2 ni 4 marta qo'shish degani: 2 + 2 + 2 + 2 = 8.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "18",
+              "correct": false
+            },
+            {
+              "text": "10",
+              "correct": false
+            },
+            {
+              "text": "8",
+              "correct": true
+            },
+            {
+              "text": "6",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 5 = ?",
+          "explanation": "2 × 5 = 10. Bu 2 ni 5 marta qo'shish degani: 2 + 2 + 2 + 2 + 2 = 10.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "10",
+              "correct": true
+            },
+            {
+              "text": "20",
+              "correct": false
+            },
+            {
+              "text": "7",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 6 = ?",
+          "explanation": "2 × 6 = 12. Bu 2 ni 6 marta qo'shish degani: 2 + 2 + 2 + 2 + 2 + 2 = 12.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "12",
+              "correct": true
+            },
+            {
+              "text": "8",
+              "correct": false
+            },
+            {
+              "text": "13",
+              "correct": false
+            },
+            {
+              "text": "14",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 7 = ?",
+          "explanation": "2 × 7 = 14. Bu 2 ni 7 marta qo'shish degani: 2 + 2 + 2 + 2 + 2 + 2 + 2 = 14.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "16",
+              "correct": false
+            },
+            {
+              "text": "14",
+              "correct": true
+            },
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 8 = ?",
+          "explanation": "2 × 8 = 16. Bu 2 ni 8 marta qo'shish degani: 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 16.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "18",
+              "correct": false
+            },
+            {
+              "text": "16",
+              "correct": true
+            },
+            {
+              "text": "6",
+              "correct": false
+            },
+            {
+              "text": "14",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 9 = ?",
+          "explanation": "2 × 9 = 18. Bu 2 ni 9 marta qo'shish degani: 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 18.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "17",
+              "correct": false
+            },
+            {
+              "text": "18",
+              "correct": true
+            },
+            {
+              "text": "27",
+              "correct": false
+            },
+            {
+              "text": "16",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 × 10 = ?",
+          "explanation": "2 × 10 = 20. Bu 2 ni 10 marta qo'shish degani: 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 20.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "18",
+              "correct": false
+            },
+            {
+              "text": "19",
+              "correct": false
+            },
+            {
+              "text": "30",
+              "correct": false
+            },
+            {
+              "text": "20",
+              "correct": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 karra",
+      "description": "3 ning karra jadvali: 3 × 1 dan 3 × 10 gacha",
+      "questions": [
+        {
+          "text": "3 × 1 = ?",
+          "explanation": "3 × 1 = 3. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "7",
+              "correct": false
+            },
+            {
+              "text": "3",
+              "correct": true
+            },
+            {
+              "text": "13",
+              "correct": false
+            },
+            {
+              "text": "6",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "3 × 2 = ?",
+          "explanation": "3 × 2 = 6. Bu 3 ni 2 marta qo'shish degani: 3 + 3 = 6.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "5",
+              "correct": false
+            },
+            {
+              "text": "16",
+              "correct": false
+            },
+            {
+              "text": "8",
+              "correct": false
+            },
+            {
+              "text": "6",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "3 × 3 = ?",
+          "explanation": "3 × 3 = 9. Bu 3 ni 3 marta qo'shish degani: 3 + 3 + 3 = 9.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "6",
+              "correct": false
+            },
+            {
+              "text": "10",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": true
+            },
+            {
+              "text": "8",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "3 × 4 = ?",
+          "explanation": "3 × 4 = 12. Bu 3 ni 4 marta qo'shish degani: 3 + 3 + 3 + 3 = 12.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "13",
+              "correct": false
+            },
+            {
+              "text": "16",
+              "correct": false
+            },
+            {
+              "text": "8",
+              "correct": false
+            },
+            {
+              "text": "12",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "3 × 5 = ?",
+          "explanation": "3 × 5 = 15. Bu 3 ni 5 marta qo'shish degani: 3 + 3 + 3 + 3 + 3 = 15.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "25",
+              "correct": false
+            },
+            {
+              "text": "15",
+              "correct": true
+            },
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "5",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "3 × 6 = ?",
+          "explanation": "3 × 6 = 18. Bu 3 ni 6 marta qo'shish degani: 3 + 3 + 3 + 3 + 3 + 3 = 18.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "18",
+              "correct": true
+            },
+            {
+              "text": "19",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            },
+            {
+              "text": "24",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "3 × 7 = ?",
+          "explanation": "3 × 7 = 21. Bu 3 ni 7 marta qo'shish degani: 3 + 3 + 3 + 3 + 3 + 3 + 3 = 21.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "31",
+              "correct": false
+            },
+            {
+              "text": "20",
+              "correct": false
+            },
+            {
+              "text": "21",
+              "correct": true
+            },
+            {
+              "text": "22",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "3 × 8 = ?",
+          "explanation": "3 × 8 = 24. Bu 3 ni 8 marta qo'shish degani: 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 = 24.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "34",
+              "correct": false
+            },
+            {
+              "text": "32",
+              "correct": false
+            },
+            {
+              "text": "25",
+              "correct": false
+            },
+            {
+              "text": "24",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "3 × 9 = ?",
+          "explanation": "3 × 9 = 27. Bu 3 ni 9 marta qo'shish degani: 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 = 27.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "30",
+              "correct": false
+            },
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "27",
+              "correct": true
+            },
+            {
+              "text": "24",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "3 × 10 = ?",
+          "explanation": "3 × 10 = 30. Bu 3 ni 10 marta qo'shish degani: 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 = 30.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "20",
+              "correct": false
+            },
+            {
+              "text": "31",
+              "correct": false
+            },
+            {
+              "text": "29",
+              "correct": false
+            },
+            {
+              "text": "30",
+              "correct": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 karra",
+      "description": "4 ning karra jadvali: 4 × 1 dan 4 × 10 gacha",
+      "questions": [
+        {
+          "text": "4 × 1 = ?",
+          "explanation": "4 × 1 = 4. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "4",
+              "correct": true
+            },
+            {
+              "text": "3",
+              "correct": false
+            },
+            {
+              "text": "14",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 × 2 = ?",
+          "explanation": "4 × 2 = 8. Bu 4 ni 2 marta qo'shish degani: 4 + 4 = 8.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "6",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            },
+            {
+              "text": "8",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "4 × 3 = ?",
+          "explanation": "4 × 3 = 12. Bu 4 ni 3 marta qo'shish degani: 4 + 4 + 4 = 12.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "2",
+              "correct": false
+            },
+            {
+              "text": "22",
+              "correct": false
+            },
+            {
+              "text": "12",
+              "correct": true
+            },
+            {
+              "text": "11",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 × 4 = ?",
+          "explanation": "4 × 4 = 16. Bu 4 ni 4 marta qo'shish degani: 4 + 4 + 4 + 4 = 16.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "16",
+              "correct": true
+            },
+            {
+              "text": "21",
+              "correct": false
+            },
+            {
+              "text": "15",
+              "correct": false
+            },
+            {
+              "text": "8",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 × 5 = ?",
+          "explanation": "4 × 5 = 20. Bu 4 ni 5 marta qo'shish degani: 4 + 4 + 4 + 4 + 4 = 20.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "16",
+              "correct": false
+            },
+            {
+              "text": "20",
+              "correct": true
+            },
+            {
+              "text": "21",
+              "correct": false
+            },
+            {
+              "text": "10",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 × 6 = ?",
+          "explanation": "4 × 6 = 24. Bu 4 ni 6 marta qo'shish degani: 4 + 4 + 4 + 4 + 4 + 4 = 24.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "24",
+              "correct": true
+            },
+            {
+              "text": "20",
+              "correct": false
+            },
+            {
+              "text": "29",
+              "correct": false
+            },
+            {
+              "text": "30",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 × 7 = ?",
+          "explanation": "4 × 7 = 28. Bu 4 ni 7 marta qo'shish degani: 4 + 4 + 4 + 4 + 4 + 4 + 4 = 28.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "27",
+              "correct": false
+            },
+            {
+              "text": "28",
+              "correct": true
+            },
+            {
+              "text": "21",
+              "correct": false
+            },
+            {
+              "text": "33",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 × 8 = ?",
+          "explanation": "4 × 8 = 32. Bu 4 ni 8 marta qo'shish degani: 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 = 32.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "32",
+              "correct": true
+            },
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "28",
+              "correct": false
+            },
+            {
+              "text": "42",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 × 9 = ?",
+          "explanation": "4 × 9 = 36. Bu 4 ni 9 marta qo'shish degani: 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 = 36.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "40",
+              "correct": false
+            },
+            {
+              "text": "32",
+              "correct": false
+            },
+            {
+              "text": "36",
+              "correct": true
+            },
+            {
+              "text": "37",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 × 10 = ?",
+          "explanation": "4 × 10 = 40. Bu 4 ni 10 marta qo'shish degani: 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 = 40.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "44",
+              "correct": false
+            },
+            {
+              "text": "36",
+              "correct": false
+            },
+            {
+              "text": "45",
+              "correct": false
+            },
+            {
+              "text": "40",
+              "correct": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 karra",
+      "description": "5 ning karra jadvali: 5 × 1 dan 5 × 10 gacha",
+      "questions": [
+        {
+          "text": "5 × 1 = ?",
+          "explanation": "5 × 1 = 5. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "4",
+              "correct": false
+            },
+            {
+              "text": "11",
+              "correct": false
+            },
+            {
+              "text": "10",
+              "correct": false
+            },
+            {
+              "text": "5",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "5 × 2 = ?",
+          "explanation": "5 × 2 = 10. Bu 5 ni 2 marta qo'shish degani: 5 + 5 = 10.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "16",
+              "correct": false
+            },
+            {
+              "text": "8",
+              "correct": false
+            },
+            {
+              "text": "15",
+              "correct": false
+            },
+            {
+              "text": "10",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "5 × 3 = ?",
+          "explanation": "5 × 3 = 15. Bu 5 ni 3 marta qo'shish degani: 5 + 5 + 5 = 15.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "15",
+              "correct": true
+            },
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "20",
+              "correct": false
+            },
+            {
+              "text": "18",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "5 × 4 = ?",
+          "explanation": "5 × 4 = 20. Bu 5 ni 4 marta qo'shish degani: 5 + 5 + 5 + 5 = 20.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "15",
+              "correct": false
+            },
+            {
+              "text": "20",
+              "correct": true
+            },
+            {
+              "text": "9",
+              "correct": false
+            },
+            {
+              "text": "30",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "5 × 5 = ?",
+          "explanation": "5 × 5 = 25. Bu 5 ni 5 marta qo'shish degani: 5 + 5 + 5 + 5 + 5 = 25.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "25",
+              "correct": true
+            },
+            {
+              "text": "30",
+              "correct": false
+            },
+            {
+              "text": "10",
+              "correct": false
+            },
+            {
+              "text": "20",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "5 × 6 = ?",
+          "explanation": "5 × 6 = 30. Bu 5 ni 6 marta qo'shish degani: 5 + 5 + 5 + 5 + 5 + 5 = 30.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "31",
+              "correct": false
+            },
+            {
+              "text": "36",
+              "correct": false
+            },
+            {
+              "text": "35",
+              "correct": false
+            },
+            {
+              "text": "30",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "5 × 7 = ?",
+          "explanation": "5 × 7 = 35. Bu 5 ni 7 marta qo'shish degani: 5 + 5 + 5 + 5 + 5 + 5 + 5 = 35.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "30",
+              "correct": false
+            },
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "35",
+              "correct": true
+            },
+            {
+              "text": "25",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "5 × 8 = ?",
+          "explanation": "5 × 8 = 40. Bu 5 ni 8 marta qo'shish degani: 5 + 5 + 5 + 5 + 5 + 5 + 5 + 5 = 40.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "30",
+              "correct": false
+            },
+            {
+              "text": "41",
+              "correct": false
+            },
+            {
+              "text": "45",
+              "correct": false
+            },
+            {
+              "text": "40",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "5 × 9 = ?",
+          "explanation": "5 × 9 = 45. Bu 5 ni 9 marta qo'shish degani: 5 + 5 + 5 + 5 + 5 + 5 + 5 + 5 + 5 = 45.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "35",
+              "correct": false
+            },
+            {
+              "text": "45",
+              "correct": true
+            },
+            {
+              "text": "54",
+              "correct": false
+            },
+            {
+              "text": "55",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "5 × 10 = ?",
+          "explanation": "5 × 10 = 50. Bu 5 ni 10 marta qo'shish degani: 5 + 5 + 5 + 5 + 5 + 5 + 5 + 5 + 5 + 5 = 50.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "45",
+              "correct": false
+            },
+            {
+              "text": "55",
+              "correct": false
+            },
+            {
+              "text": "15",
+              "correct": false
+            },
+            {
+              "text": "50",
+              "correct": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 karra",
+      "description": "6 ning karra jadvali: 6 × 1 dan 6 × 10 gacha",
+      "questions": [
+        {
+          "text": "6 × 1 = ?",
+          "explanation": "6 × 1 = 6. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "5",
+              "correct": false
+            },
+            {
+              "text": "16",
+              "correct": false
+            },
+            {
+              "text": "6",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "6 × 2 = ?",
+          "explanation": "6 × 2 = 12. Bu 6 ni 2 marta qo'shish degani: 6 + 6 = 12.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "19",
+              "correct": false
+            },
+            {
+              "text": "22",
+              "correct": false
+            },
+            {
+              "text": "2",
+              "correct": false
+            },
+            {
+              "text": "12",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "6 × 3 = ?",
+          "explanation": "6 × 3 = 18. Bu 6 ni 3 marta qo'shish degani: 6 + 6 + 6 = 18.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "18",
+              "correct": true
+            },
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "24",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "6 × 4 = ?",
+          "explanation": "6 × 4 = 24. Bu 6 ni 4 marta qo'shish degani: 6 + 6 + 6 + 6 = 24.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "30",
+              "correct": false
+            },
+            {
+              "text": "24",
+              "correct": true
+            },
+            {
+              "text": "34",
+              "correct": false
+            },
+            {
+              "text": "14",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "6 × 5 = ?",
+          "explanation": "6 × 5 = 30. Bu 6 ni 5 marta qo'shish degani: 6 + 6 + 6 + 6 + 6 = 30.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "35",
+              "correct": false
+            },
+            {
+              "text": "25",
+              "correct": false
+            },
+            {
+              "text": "31",
+              "correct": false
+            },
+            {
+              "text": "30",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "6 × 6 = ?",
+          "explanation": "6 × 6 = 36. Bu 6 ni 6 marta qo'shish degani: 6 + 6 + 6 + 6 + 6 + 6 = 36.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "36",
+              "correct": true
+            },
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "35",
+              "correct": false
+            },
+            {
+              "text": "42",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "6 × 7 = ?",
+          "explanation": "6 × 7 = 42. Bu 6 ni 7 marta qo'shish degani: 6 + 6 + 6 + 6 + 6 + 6 + 6 = 42.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "42",
+              "correct": true
+            },
+            {
+              "text": "13",
+              "correct": false
+            },
+            {
+              "text": "49",
+              "correct": false
+            },
+            {
+              "text": "48",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "6 × 8 = ?",
+          "explanation": "6 × 8 = 48. Bu 6 ni 8 marta qo'shish degani: 6 + 6 + 6 + 6 + 6 + 6 + 6 + 6 = 48.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "54",
+              "correct": false
+            },
+            {
+              "text": "56",
+              "correct": false
+            },
+            {
+              "text": "48",
+              "correct": true
+            },
+            {
+              "text": "14",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "6 × 9 = ?",
+          "explanation": "6 × 9 = 54. Bu 6 ni 9 marta qo'shish degani: 6 + 6 + 6 + 6 + 6 + 6 + 6 + 6 + 6 = 54.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "54",
+              "correct": true
+            },
+            {
+              "text": "60",
+              "correct": false
+            },
+            {
+              "text": "48",
+              "correct": false
+            },
+            {
+              "text": "53",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "6 × 10 = ?",
+          "explanation": "6 × 10 = 60. Bu 6 ni 10 marta qo'shish degani: 6 + 6 + 6 + 6 + 6 + 6 + 6 + 6 + 6 + 6 = 60.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "60",
+              "correct": true
+            },
+            {
+              "text": "66",
+              "correct": false
+            },
+            {
+              "text": "67",
+              "correct": false
+            },
+            {
+              "text": "50",
+              "correct": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7 karra",
+      "description": "7 ning karra jadvali: 7 × 1 dan 7 × 10 gacha",
+      "questions": [
+        {
+          "text": "7 × 1 = ?",
+          "explanation": "7 × 1 = 7. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "15",
+              "correct": false
+            },
+            {
+              "text": "6",
+              "correct": false
+            },
+            {
+              "text": "7",
+              "correct": true
+            },
+            {
+              "text": "17",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "7 × 2 = ?",
+          "explanation": "7 × 2 = 14. Bu 7 ni 2 marta qo'shish degani: 7 + 7 = 14.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "14",
+              "correct": true
+            },
+            {
+              "text": "24",
+              "correct": false
+            },
+            {
+              "text": "7",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "7 × 3 = ?",
+          "explanation": "7 × 3 = 21. Bu 7 ni 3 marta qo'shish degani: 7 + 7 + 7 = 21.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "20",
+              "correct": false
+            },
+            {
+              "text": "24",
+              "correct": false
+            },
+            {
+              "text": "28",
+              "correct": false
+            },
+            {
+              "text": "21",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "7 × 4 = ?",
+          "explanation": "7 × 4 = 28. Bu 7 ni 4 marta qo'shish degani: 7 + 7 + 7 + 7 = 28.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "21",
+              "correct": false
+            },
+            {
+              "text": "28",
+              "correct": true
+            },
+            {
+              "text": "32",
+              "correct": false
+            },
+            {
+              "text": "38",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "7 × 5 = ?",
+          "explanation": "7 × 5 = 35. Bu 7 ni 5 marta qo'shish degani: 7 + 7 + 7 + 7 + 7 = 35.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "34",
+              "correct": false
+            },
+            {
+              "text": "40",
+              "correct": false
+            },
+            {
+              "text": "28",
+              "correct": false
+            },
+            {
+              "text": "35",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "7 × 6 = ?",
+          "explanation": "7 × 6 = 42. Bu 7 ni 6 marta qo'shish degani: 7 + 7 + 7 + 7 + 7 + 7 = 42.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "35",
+              "correct": false
+            },
+            {
+              "text": "41",
+              "correct": false
+            },
+            {
+              "text": "42",
+              "correct": true
+            },
+            {
+              "text": "36",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "7 × 7 = ?",
+          "explanation": "7 × 7 = 49. Bu 7 ni 7 marta qo'shish degani: 7 + 7 + 7 + 7 + 7 + 7 + 7 = 49.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "49",
+              "correct": true
+            },
+            {
+              "text": "59",
+              "correct": false
+            },
+            {
+              "text": "42",
+              "correct": false
+            },
+            {
+              "text": "57",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "7 × 8 = ?",
+          "explanation": "7 × 8 = 56. Bu 7 ni 8 marta qo'shish degani: 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 = 56.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "64",
+              "correct": false
+            },
+            {
+              "text": "49",
+              "correct": false
+            },
+            {
+              "text": "56",
+              "correct": true
+            },
+            {
+              "text": "46",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "7 × 9 = ?",
+          "explanation": "7 × 9 = 63. Bu 7 ni 9 marta qo'shish degani: 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 = 63.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "54",
+              "correct": false
+            },
+            {
+              "text": "53",
+              "correct": false
+            },
+            {
+              "text": "63",
+              "correct": true
+            },
+            {
+              "text": "73",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "7 × 10 = ?",
+          "explanation": "7 × 10 = 70. Bu 7 ni 10 marta qo'shish degani: 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 = 70.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "63",
+              "correct": false
+            },
+            {
+              "text": "80",
+              "correct": false
+            },
+            {
+              "text": "17",
+              "correct": false
+            },
+            {
+              "text": "70",
+              "correct": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8 karra",
+      "description": "8 ning karra jadvali: 8 × 1 dan 8 × 10 gacha",
+      "questions": [
+        {
+          "text": "8 × 1 = ?",
+          "explanation": "8 × 1 = 8. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "18",
+              "correct": false
+            },
+            {
+              "text": "8",
+              "correct": true
+            },
+            {
+              "text": "7",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "8 × 2 = ?",
+          "explanation": "8 × 2 = 16. Bu 8 ni 2 marta qo'shish degani: 8 + 8 = 16.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "25",
+              "correct": false
+            },
+            {
+              "text": "26",
+              "correct": false
+            },
+            {
+              "text": "16",
+              "correct": true
+            },
+            {
+              "text": "14",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "8 × 3 = ?",
+          "explanation": "8 × 3 = 24. Bu 8 ni 3 marta qo'shish degani: 8 + 8 + 8 = 24.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "24",
+              "correct": true
+            },
+            {
+              "text": "33",
+              "correct": false
+            },
+            {
+              "text": "11",
+              "correct": false
+            },
+            {
+              "text": "25",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "8 × 4 = ?",
+          "explanation": "8 × 4 = 32. Bu 8 ni 4 marta qo'shish degani: 8 + 8 + 8 + 8 = 32.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "32",
+              "correct": true
+            },
+            {
+              "text": "31",
+              "correct": false
+            },
+            {
+              "text": "41",
+              "correct": false
+            },
+            {
+              "text": "28",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "8 × 5 = ?",
+          "explanation": "8 × 5 = 40. Bu 8 ni 5 marta qo'shish degani: 8 + 8 + 8 + 8 + 8 = 40.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "40",
+              "correct": true
+            },
+            {
+              "text": "49",
+              "correct": false
+            },
+            {
+              "text": "35",
+              "correct": false
+            },
+            {
+              "text": "48",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "8 × 6 = ?",
+          "explanation": "8 × 6 = 48. Bu 8 ni 6 marta qo'shish degani: 8 + 8 + 8 + 8 + 8 + 8 = 48.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "49",
+              "correct": false
+            },
+            {
+              "text": "57",
+              "correct": false
+            },
+            {
+              "text": "48",
+              "correct": true
+            },
+            {
+              "text": "38",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "8 × 7 = ?",
+          "explanation": "8 × 7 = 56. Bu 8 ni 7 marta qo'shish degani: 8 + 8 + 8 + 8 + 8 + 8 + 8 = 56.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "63",
+              "correct": false
+            },
+            {
+              "text": "15",
+              "correct": false
+            },
+            {
+              "text": "56",
+              "correct": true
+            },
+            {
+              "text": "48",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "8 × 8 = ?",
+          "explanation": "8 × 8 = 64. Bu 8 ni 8 marta qo'shish degani: 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 = 64.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "65",
+              "correct": false
+            },
+            {
+              "text": "63",
+              "correct": false
+            },
+            {
+              "text": "16",
+              "correct": false
+            },
+            {
+              "text": "64",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "8 × 9 = ?",
+          "explanation": "8 × 9 = 72. Bu 8 ni 9 marta qo'shish degani: 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 = 72.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "63",
+              "correct": false
+            },
+            {
+              "text": "62",
+              "correct": false
+            },
+            {
+              "text": "82",
+              "correct": false
+            },
+            {
+              "text": "72",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "8 × 10 = ?",
+          "explanation": "8 × 10 = 80. Bu 8 ni 10 marta qo'shish degani: 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 = 80.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "80",
+              "correct": true
+            },
+            {
+              "text": "79",
+              "correct": false
+            },
+            {
+              "text": "18",
+              "correct": false
+            },
+            {
+              "text": "70",
+              "correct": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9 karra",
+      "description": "9 ning karra jadvali: 9 × 1 dan 9 × 10 gacha",
+      "questions": [
+        {
+          "text": "9 × 1 = ?",
+          "explanation": "9 × 1 = 9. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "9",
+              "correct": true
+            },
+            {
+              "text": "18",
+              "correct": false
+            },
+            {
+              "text": "19",
+              "correct": false
+            },
+            {
+              "text": "8",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 2 = ?",
+          "explanation": "9 × 2 = 18. Bu 9 ni 2 marta qo'shish degani: 9 + 9 = 18.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "16",
+              "correct": false
+            },
+            {
+              "text": "27",
+              "correct": false
+            },
+            {
+              "text": "18",
+              "correct": true
+            },
+            {
+              "text": "8",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 3 = ?",
+          "explanation": "9 × 3 = 27. Bu 9 ni 3 marta qo'shish degani: 9 + 9 + 9 = 27.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "30",
+              "correct": false
+            },
+            {
+              "text": "17",
+              "correct": false
+            },
+            {
+              "text": "27",
+              "correct": true
+            },
+            {
+              "text": "24",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 4 = ?",
+          "explanation": "9 × 4 = 36. Bu 9 ni 4 marta qo'shish degani: 9 + 9 + 9 + 9 = 36.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "36",
+              "correct": true
+            },
+            {
+              "text": "35",
+              "correct": false
+            },
+            {
+              "text": "46",
+              "correct": false
+            },
+            {
+              "text": "13",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 5 = ?",
+          "explanation": "9 × 5 = 45. Bu 9 ni 5 marta qo'shish degani: 9 + 9 + 9 + 9 + 9 = 45.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "55",
+              "correct": false
+            },
+            {
+              "text": "14",
+              "correct": false
+            },
+            {
+              "text": "45",
+              "correct": true
+            },
+            {
+              "text": "35",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 6 = ?",
+          "explanation": "9 × 6 = 54. Bu 9 ni 6 marta qo'shish degani: 9 + 9 + 9 + 9 + 9 + 9 = 54.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "63",
+              "correct": false
+            },
+            {
+              "text": "54",
+              "correct": true
+            },
+            {
+              "text": "48",
+              "correct": false
+            },
+            {
+              "text": "44",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 7 = ?",
+          "explanation": "9 × 7 = 63. Bu 9 ni 7 marta qo'shish degani: 9 + 9 + 9 + 9 + 9 + 9 + 9 = 63.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "72",
+              "correct": false
+            },
+            {
+              "text": "56",
+              "correct": false
+            },
+            {
+              "text": "63",
+              "correct": true
+            },
+            {
+              "text": "62",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 8 = ?",
+          "explanation": "9 × 8 = 72. Bu 9 ni 8 marta qo'shish degani: 9 + 9 + 9 + 9 + 9 + 9 + 9 + 9 = 72.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "71",
+              "correct": false
+            },
+            {
+              "text": "64",
+              "correct": false
+            },
+            {
+              "text": "72",
+              "correct": true
+            },
+            {
+              "text": "80",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 9 = ?",
+          "explanation": "9 × 9 = 81. Bu 9 ni 9 marta qo'shish degani: 9 + 9 + 9 + 9 + 9 + 9 + 9 + 9 + 9 = 81.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "72",
+              "correct": false
+            },
+            {
+              "text": "90",
+              "correct": false
+            },
+            {
+              "text": "81",
+              "correct": true
+            },
+            {
+              "text": "82",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "9 × 10 = ?",
+          "explanation": "9 × 10 = 90. Bu 9 ni 10 marta qo'shish degani: 9 + 9 + 9 + 9 + 9 + 9 + 9 + 9 + 9 + 9 = 90.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "81",
+              "correct": false
+            },
+            {
+              "text": "90",
+              "correct": true
+            },
+            {
+              "text": "91",
+              "correct": false
+            },
+            {
+              "text": "89",
+              "correct": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10 karra",
+      "description": "10 ning karra jadvali: 10 × 1 dan 10 × 10 gacha",
+      "questions": [
+        {
+          "text": "10 × 1 = ?",
+          "explanation": "10 × 1 = 10. Har qanday sonni 1 ga ko'paytirsak, sonning o'zi chiqadi.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "10",
+              "correct": true
+            },
+            {
+              "text": "21",
+              "correct": false
+            },
+            {
+              "text": "20",
+              "correct": false
+            },
+            {
+              "text": "11",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "10 × 2 = ?",
+          "explanation": "10 × 2 = 20. Bu 10 ni 2 marta qo'shish degani: 10 + 10 = 20.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "12",
+              "correct": false
+            },
+            {
+              "text": "22",
+              "correct": false
+            },
+            {
+              "text": "20",
+              "correct": true
+            },
+            {
+              "text": "30",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "10 × 3 = ?",
+          "explanation": "10 × 3 = 30. Bu 10 ni 3 marta qo'shish degani: 10 + 10 + 10 = 30.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "13",
+              "correct": false
+            },
+            {
+              "text": "41",
+              "correct": false
+            },
+            {
+              "text": "30",
+              "correct": true
+            },
+            {
+              "text": "29",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "10 × 4 = ?",
+          "explanation": "10 × 4 = 40. Bu 10 ni 4 marta qo'shish degani: 10 + 10 + 10 + 10 = 40.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "36",
+              "correct": false
+            },
+            {
+              "text": "44",
+              "correct": false
+            },
+            {
+              "text": "40",
+              "correct": true
+            },
+            {
+              "text": "14",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "10 × 5 = ?",
+          "explanation": "10 × 5 = 50. Bu 10 ni 5 marta qo'shish degani: 10 + 10 + 10 + 10 + 10 = 50.",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "50",
+              "correct": true
+            },
+            {
+              "text": "49",
+              "correct": false
+            },
+            {
+              "text": "55",
+              "correct": false
+            },
+            {
+              "text": "40",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "10 × 6 = ?",
+          "explanation": "10 × 6 = 60. Bu 10 ni 6 marta qo'shish degani: 10 + 10 + 10 + 10 + 10 + 10 = 60.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "70",
+              "correct": false
+            },
+            {
+              "text": "60",
+              "correct": true
+            },
+            {
+              "text": "59",
+              "correct": false
+            },
+            {
+              "text": "66",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "10 × 7 = ?",
+          "explanation": "10 × 7 = 70. Bu 10 ni 7 marta qo'shish degani: 10 + 10 + 10 + 10 + 10 + 10 + 10 = 70.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "60",
+              "correct": false
+            },
+            {
+              "text": "70",
+              "correct": true
+            },
+            {
+              "text": "69",
+              "correct": false
+            },
+            {
+              "text": "71",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "10 × 8 = ?",
+          "explanation": "10 × 8 = 80. Bu 10 ni 8 marta qo'shish degani: 10 + 10 + 10 + 10 + 10 + 10 + 10 + 10 = 80.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "88",
+              "correct": false
+            },
+            {
+              "text": "80",
+              "correct": true
+            },
+            {
+              "text": "72",
+              "correct": false
+            },
+            {
+              "text": "79",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "10 × 9 = ?",
+          "explanation": "10 × 9 = 90. Bu 10 ni 9 marta qo'shish degani: 10 + 10 + 10 + 10 + 10 + 10 + 10 + 10 + 10 = 90.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "91",
+              "correct": false
+            },
+            {
+              "text": "81",
+              "correct": false
+            },
+            {
+              "text": "101",
+              "correct": false
+            },
+            {
+              "text": "90",
+              "correct": true
+            }
+          ]
+        },
+        {
+          "text": "10 × 10 = ?",
+          "explanation": "10 × 10 = 100. Bu 10 ni 10 marta qo'shish degani: 10 + 10 + 10 + 10 + 10 + 10 + 10 + 10 + 10 + 10 = 100.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {
+              "text": "101",
+              "correct": false
+            },
+            {
+              "text": "99",
+              "correct": false
+            },
+            {
+              "text": "100",
+              "correct": true
+            },
+            {
+              "text": "110",
+              "correct": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

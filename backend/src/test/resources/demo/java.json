@@ -1,0 +1,354 @@
+{
+  "subject": "Java dasturlash",
+  "subjectDescription": "Java tili asoslari, OOP va kolleksiyalar",
+  "topics": [
+    {
+      "name": "Java asoslari",
+      "description": "Tiplar, operatorlar, satrlar",
+      "questions": [
+        {
+          "text": "Java'da int tipi necha bit joy egallaydi?",
+          "explanation": "int 32 bitli ishorali butun son. byte 8, short 16, long 64 bit.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "16 bit", "correct": false},
+            {"text": "32 bit", "correct": true},
+            {"text": "64 bit", "correct": false},
+            {"text": "8 bit", "correct": false}
+          ]
+        },
+        {
+          "text": "Quyidagilardan qaysi biri primitiv tip EMAS?",
+          "explanation": "Java'da 8 ta primitiv tip bor: byte, short, int, long, float, double, char, boolean. String esa klass (reference tip).",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "boolean", "correct": false},
+            {"text": "char", "correct": false},
+            {"text": "String", "correct": true},
+            {"text": "double", "correct": false}
+          ]
+        },
+        {
+          "text": "System.out.println(10 / 4); nimani chiqaradi?",
+          "explanation": "Ikkala operand int bo'lgani uchun butun sonli bo'lish bajariladi va kasr qismi tashlab yuboriladi: 10 / 4 = 2.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "2.5", "correct": false},
+            {"text": "2", "correct": true},
+            {"text": "3", "correct": false},
+            {"text": "2.0", "correct": false}
+          ]
+        },
+        {
+          "text": "Ikki String obyektining mazmunini solishtirish uchun nima ishlatiladi?",
+          "explanation": "equals() satrlarning mazmunini solishtiradi. == esa ikki havola bir xil obyektga ishora qilishini tekshiradi.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "==", "correct": false},
+            {"text": "compareTo() == 1", "correct": false},
+            {"text": "equals()", "correct": true},
+            {"text": "=", "correct": false}
+          ]
+        },
+        {
+          "text": "Klassning maydoni sifatida e'lon qilingan boolean o'zgaruvchining standart (default) qiymati qanday?",
+          "explanation": "Klass maydonlari avtomatik ravishda boshlang'ich qiymat oladi: boolean uchun false, sonlar uchun 0, obyektlar uchun null. Lokal o'zgaruvchilar esa default qiymat olmaydi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "true", "correct": false},
+            {"text": "null", "correct": false},
+            {"text": "0", "correct": false},
+            {"text": "false", "correct": true}
+          ]
+        },
+        {
+          "text": "final kalit so'zi bilan e'lon qilingan o'zgaruvchi haqida qaysi gap to'g'ri?",
+          "explanation": "final o'zgaruvchiga qiymat faqat bir marta beriladi. Agar u obyektga havola bo'lsa, havolani o'zgartirib bo'lmaydi, lekin obyektning ichki holati o'zgarishi mumkin.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Unga qiymat faqat bir marta beriladi", "correct": true},
+            {"text": "U faqat static bo'lishi mumkin", "correct": false},
+            {"text": "U har doim primitiv tipda bo'ladi", "correct": false},
+            {"text": "U avtomatik ravishda public bo'ladi", "correct": false}
+          ]
+        },
+        {
+          "text": "int x = 5; int y = x++ + ++x; dan keyin y nechaga teng?",
+          "explanation": "x++ avval 5 ni qaytaradi, keyin x = 6 bo'ladi. ++x esa avval x ni 7 ga oshiradi va 7 ni qaytaradi. y = 5 + 7 = 12.",
+          "difficulty": "HARD",
+          "options": [
+            {"text": "10", "correct": false},
+            {"text": "11", "correct": false},
+            {"text": "12", "correct": true},
+            {"text": "13", "correct": false}
+          ]
+        },
+        {
+          "text": "Java dasturini ishga tushirish nuqtasi bo'lgan metod qanday e'lon qilinadi (klassik ko'rinishda)?",
+          "explanation": "JVM ishga tushirish uchun public static void main(String[] args) metodini qidiradi.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "public void main()", "correct": false},
+            {"text": "public static void main(String[] args)", "correct": true},
+            {"text": "static int main(String args)", "correct": false},
+            {"text": "private static void start(String[] args)", "correct": false}
+          ]
+        },
+        {
+          "text": "String nima uchun immutable (o'zgarmas) hisoblanadi?",
+          "explanation": "String obyekti yaratilgandan keyin uning ichidagi qiymatni o'zgartirib bo'lmaydi. concat(), replace() kabi metodlar yangi String qaytaradi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Uni o'zgartiruvchi metodlar yangi obyekt qaytaradi, asl obyekt o'zgarmaydi", "correct": true},
+            {"text": "Chunki u primitiv tip", "correct": false},
+            {"text": "Chunki String o'zgaruvchilari doim final bo'ladi", "correct": false},
+            {"text": "Chunki u faqat stack xotirada saqlanadi", "correct": false}
+          ]
+        },
+        {
+          "text": "Qaysi sikl kamida bir marta bajarilishi kafolatlangan?",
+          "explanation": "do-while siklida shart tana bajarilgandan keyin tekshiriladi, shuning uchun tana kamida bir marta bajariladi.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "for", "correct": false},
+            {"text": "while", "correct": false},
+            {"text": "for-each", "correct": false},
+            {"text": "do-while", "correct": true}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "OOP",
+      "description": "Inkapsulyatsiya, meros, polimorfizm, abstraksiya",
+      "questions": [
+        {
+          "text": "Java'da bir klass nechta klassdan to'g'ridan-to'g'ri meros (extends) olishi mumkin?",
+          "explanation": "Java'da klasslar uchun faqat yakka meros bor: bitta klassni extends qilish mumkin. Interfeyslarni esa bir nechtasini implements qilish mumkin.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "Faqat bitta", "correct": true},
+            {"text": "Ikkita", "correct": false},
+            {"text": "Cheklanmagan", "correct": false},
+            {"text": "Umuman mumkin emas", "correct": false}
+          ]
+        },
+        {
+          "text": "Inkapsulyatsiya nima?",
+          "explanation": "Inkapsulyatsiya obyekt ma'lumotlarini (odatda private maydonlar) yashirib, ularga faqat metodlar (getter/setter va boshqalar) orqali kirishni ta'minlash.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "Bir klassdan boshqa klass yaratish", "correct": false},
+            {"text": "Ma'lumotlarni yashirib, ularga metodlar orqali kirishni ta'minlash", "correct": true},
+            {"text": "Bir metodning bir nechta ko'rinishga ega bo'lishi", "correct": false},
+            {"text": "Klassni boshqa paketga ko'chirish", "correct": false}
+          ]
+        },
+        {
+          "text": "Metodni override qilish (qayta aniqlash) nima?",
+          "explanation": "Override – voris klassda ota klass metodini xuddi shu nom, parametrlar va mos qaytish tipi bilan qayta yozish. Bir klassda bir xil nomli, turli parametrli metodlar esa overload deyiladi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Bir klassda bir xil nomli, turli parametrli metodlar yozish", "correct": false},
+            {"text": "Metodni private qilish", "correct": false},
+            {"text": "Voris klassda ota klass metodini xuddi shu signatura bilan qayta yozish", "correct": true},
+            {"text": "Metodni static qilish", "correct": false}
+          ]
+        },
+        {
+          "text": "Abstrakt klass haqida qaysi gap to'g'ri?",
+          "explanation": "Abstrakt klassdan new orqali obyekt yaratib bo'lmaydi. U abstrakt va oddiy metodlarga, maydonlarga va konstruktorga ega bo'lishi mumkin.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Undan to'g'ridan-to'g'ri obyekt yaratib bo'lmaydi", "correct": true},
+            {"text": "Unda faqat abstrakt metodlar bo'ladi", "correct": false},
+            {"text": "Unda konstruktor bo'lishi mumkin emas", "correct": false},
+            {"text": "U final bo'lishi shart", "correct": false}
+          ]
+        },
+        {
+          "text": "Qaysi kirish modifikatori a'zoni faqat o'sha klass ichida ko'rinadigan qiladi?",
+          "explanation": "private – faqat klass ichida. Modifikatorsiz (package-private) – shu paket ichida. protected – paket va voris klasslarda. public – hamma joyda.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "protected", "correct": false},
+            {"text": "public", "correct": false},
+            {"text": "private", "correct": true},
+            {"text": "modifikatorsiz (default)", "correct": false}
+          ]
+        },
+        {
+          "text": "super kalit so'zi nima uchun ishlatiladi?",
+          "explanation": "super ota klassning konstruktori, metodlari yoki maydonlariga murojaat qilish uchun ishlatiladi, masalan super(...) yoki super.method().",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "Joriy obyektga murojaat qilish uchun", "correct": false},
+            {"text": "Ota klass konstruktori yoki metodlariga murojaat qilish uchun", "correct": true},
+            {"text": "Statik metod yaratish uchun", "correct": false},
+            {"text": "Klassni meros olishdan himoyalash uchun", "correct": false}
+          ]
+        },
+        {
+          "text": "Animal a = new Dog(); a.sound(); – bu yerda qaysi klassning sound() metodi chaqiriladi (Dog uni override qilgan)?",
+          "explanation": "Dinamik polimorfizm: chaqiriladigan metod havola tipi bo'yicha emas, ishlash vaqtidagi haqiqiy obyekt tipi (Dog) bo'yicha tanlanadi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Animal klassiniki", "correct": false},
+            {"text": "Dog klassiniki", "correct": true},
+            {"text": "Kompilyatsiya xatosi bo'ladi", "correct": false},
+            {"text": "Ikkalasi ham ketma-ket chaqiriladi", "correct": false}
+          ]
+        },
+        {
+          "text": "Interfeysdagi metodlar haqida qaysi gap to'g'ri (Java 8+)?",
+          "explanation": "Java 8 dan boshlab interfeysda default va static metodlar tanasi bilan yozilishi mumkin, Java 9 dan esa private metodlar ham. Abstrakt metodlar esa implicit public abstract bo'ladi.",
+          "difficulty": "HARD",
+          "options": [
+            {"text": "Interfeysda tanasi bor metod bo'lishi mumkin emas", "correct": false},
+            {"text": "Interfeys metodlari doim private", "correct": false},
+            {"text": "Interfeysda default metodlar tanasi bilan yozilishi mumkin", "correct": true},
+            {"text": "Interfeysda konstruktor bo'ladi", "correct": false}
+          ]
+        },
+        {
+          "text": "final deb e'lon qilingan klass haqida qaysi gap to'g'ri?",
+          "explanation": "final klassdan meros olib bo'lmaydi (masalan String). Uning obyektlarini esa odatdagidek yaratish mumkin.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Undan obyekt yaratib bo'lmaydi", "correct": false},
+            {"text": "Undan meros olib bo'lmaydi", "correct": true},
+            {"text": "Uning barcha maydonlari avtomatik static bo'ladi", "correct": false},
+            {"text": "U abstrakt bo'lishi shart", "correct": false}
+          ]
+        },
+        {
+          "text": "Metod overloading (qayta yuklash) qachon bo'ladi?",
+          "explanation": "Overloading – bir klassda bir xil nomli, lekin parametrlari soni yoki tiplari farq qiluvchi metodlar. Faqat qaytish tipi farq qilsa, bu overloading emas, kompilyatsiya xatosi bo'ladi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Metodlar nomi bir xil, parametrlari farqli bo'lsa", "correct": true},
+            {"text": "Metodlar nomi va parametrlari bir xil, faqat qaytish tipi farqli bo'lsa", "correct": false},
+            {"text": "Voris klassda ota metod qayta yozilsa", "correct": false},
+            {"text": "Metod o'zini o'zi chaqirsa", "correct": false}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kolleksiyalar",
+      "description": "List, Set, Map va ularning implementatsiyalari",
+      "questions": [
+        {
+          "text": "Qaysi kolleksiya takroriy elementlarni saqlamaydi?",
+          "explanation": "Set interfeysi (HashSet, TreeSet, LinkedHashSet) faqat unikal elementlarni saqlaydi. List esa takrorlarga ruxsat beradi.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "ArrayList", "correct": false},
+            {"text": "LinkedList", "correct": false},
+            {"text": "HashSet", "correct": true},
+            {"text": "Vector", "correct": false}
+          ]
+        },
+        {
+          "text": "ArrayList'da indeks bo'yicha elementni olish (get) qanday murakkablikka ega?",
+          "explanation": "ArrayList massivga asoslangan, shuning uchun get(i) O(1) vaqtda ishlaydi. LinkedList'da esa O(n).",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "O(1)", "correct": true},
+            {"text": "O(n)", "correct": false},
+            {"text": "O(log n)", "correct": false},
+            {"text": "O(n²)", "correct": false}
+          ]
+        },
+        {
+          "text": "HashMap'da bir xil kalit bilan ikki marta put() qilinsa nima bo'ladi?",
+          "explanation": "Kalitlar unikal: ikkinchi put() eski qiymatni yangisi bilan almashtiradi va eski qiymatni qaytaradi.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "Exception tashlanadi", "correct": false},
+            {"text": "Ikkala qiymat ham saqlanadi", "correct": false},
+            {"text": "Eski qiymat yangisi bilan almashtiriladi", "correct": true},
+            {"text": "Ikkinchi put() e'tiborsiz qoldiriladi", "correct": false}
+          ]
+        },
+        {
+          "text": "TreeSet elementlarni qanday tartibda saqlaydi?",
+          "explanation": "TreeSet elementlarni tabiiy tartibda (Comparable) yoki berilgan Comparator bo'yicha saralangan holda saqlaydi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Qo'shilgan tartibda", "correct": false},
+            {"text": "Tasodifiy tartibda", "correct": false},
+            {"text": "Saralangan tartibda", "correct": true},
+            {"text": "Teskari qo'shilgan tartibda", "correct": false}
+          ]
+        },
+        {
+          "text": "Qaysi Map implementatsiyasi elementlarni qo'shilgan tartibda saqlaydi?",
+          "explanation": "LinkedHashMap ichki bog'langan ro'yxat orqali qo'shilish tartibini saqlaydi. HashMap tartibni kafolatlamaydi, TreeMap esa kalitlar bo'yicha saralaydi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "HashMap", "correct": false},
+            {"text": "TreeMap", "correct": false},
+            {"text": "Hashtable", "correct": false},
+            {"text": "LinkedHashMap", "correct": true}
+          ]
+        },
+        {
+          "text": "HashMap kalitlari sifatida ishlatiladigan obyektlarda qaysi metodlar to'g'ri qayta aniqlanishi kerak?",
+          "explanation": "HashMap kalitni hashCode() orqali to'g'ri bo'limga joylaydi va equals() orqali solishtiradi. Ikkalasi o'zaro mos bo'lishi kerak.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "toString() va equals()", "correct": false},
+            {"text": "hashCode() va equals()", "correct": true},
+            {"text": "compareTo() va toString()", "correct": false},
+            {"text": "clone() va hashCode()", "correct": false}
+          ]
+        },
+        {
+          "text": "For-each sikli ichida ArrayList'dan list.remove() orqali element o'chirilsa odatda nima bo'ladi?",
+          "explanation": "Iteratsiya paytida kolleksiya tuzilishi o'zgarsa, iterator buni aniqlab ConcurrentModificationException tashlaydi. To'g'ri usul – iterator.remove() yoki removeIf().",
+          "difficulty": "HARD",
+          "options": [
+            {"text": "Element muammosiz o'chiriladi", "correct": false},
+            {"text": "ConcurrentModificationException tashlanadi", "correct": true},
+            {"text": "NullPointerException tashlanadi", "correct": false},
+            {"text": "Kompilyatsiya xatosi bo'ladi", "correct": false}
+          ]
+        },
+        {
+          "text": "List.of(1, 2, 3) bilan yaratilgan ro'yxatga add() qilinsa nima bo'ladi?",
+          "explanation": "List.of() o'zgarmas (immutable) ro'yxat qaytaradi, unga element qo'shish UnsupportedOperationException tashlaydi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Element oxiriga qo'shiladi", "correct": false},
+            {"text": "UnsupportedOperationException tashlanadi", "correct": true},
+            {"text": "Ro'yxat nusxalanib, element qo'shiladi", "correct": false},
+            {"text": "IndexOutOfBoundsException tashlanadi", "correct": false}
+          ]
+        },
+        {
+          "text": "Navbat (FIFO) sifatida ishlatish uchun qaysi interfeys mo'ljallangan?",
+          "explanation": "Queue interfeysi FIFO tamoyilida ishlaydi: offer() bilan qo'shiladi, poll() bilan boshidan olinadi. Masalan, ArrayDeque yoki LinkedList.",
+          "difficulty": "EASY",
+          "options": [
+            {"text": "Queue", "correct": true},
+            {"text": "Set", "correct": false},
+            {"text": "Map", "correct": false},
+            {"text": "SortedSet", "correct": false}
+          ]
+        },
+        {
+          "text": "Collections.sort(list) qaysi turdagi elementlar uchun ishlaydi (Comparator berilmaganda)?",
+          "explanation": "Comparator berilmasa, elementlar Comparable interfeysini implement qilgan bo'lishi kerak, chunki ular compareTo() orqali solishtiriladi.",
+          "difficulty": "MEDIUM",
+          "options": [
+            {"text": "Faqat String'lar uchun", "correct": false},
+            {"text": "Comparable'ni implement qilgan elementlar uchun", "correct": true},
+            {"text": "Faqat primitiv tiplar uchun", "correct": false},
+            {"text": "Har qanday obyekt uchun", "correct": false}
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,194 @@
+@import '@fontsource-variable/unbounded';
+@import '@fontsource-variable/onest';
+
+/* «Maktab daftari»: siyoh-ko'k, marker-sariq, toza qog'oz, katakli fon */
+:root {
+  --ink: #23336b;
+  --ink-soft: #3d4f8f;
+  --marker: #ffc93c;
+  --marker-soft: #fff1c4;
+  --paper: #f6f8fc;
+  --card: #ffffff;
+  --grid: #e2e8f3;
+  --line: #dde3ee;
+  --text: #1a2140;
+  --muted: #69708a;
+  --ok: #1f9d6b;
+  --ok-soft: #e3f6ee;
+  --bad: #d93a30;
+  --bad-soft: #fdeceb;
+  --teacher: #d42b2b;
+  --shadow: 0 1px 2px rgba(35, 51, 107, 0.06), 0 4px 14px rgba(35, 51, 107, 0.07);
+  --radius: 16px;
+  --display: 'Unbounded Variable', 'Onest Variable', system-ui, sans-serif;
+  --body: 'Onest Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --safe-bottom: env(safe-area-inset-bottom);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --ink: #8fa6ff;
+  --ink-soft: #b3c2ff;
+  --marker: #ffd25e;
+  --marker-soft: #3a3320;
+  --paper: #0f1430;
+  --card: #18203f;
+  --grid: #1c254a;
+  --line: #2a3460;
+  --text: #e8ebf7;
+  --muted: #98a0be;
+  --ok: #34c58b;
+  --ok-soft: #123326;
+  --bad: #ff6b60;
+  --bad-soft: #3a1a1c;
+  --teacher: #ff5a52;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  padding-top: env(safe-area-inset-top);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Katakli daftar foni */
+.grid-paper {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+}
+
+.screen {
+  padding: 8px 16px calc(96px + var(--safe-bottom));
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.screen-title {
+  font-family: var(--display);
+  font-weight: 650;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 12px 0 4px;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 24px 4px 10px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* Asosiy tugma: siyoh rangida, katta, barmoq uchun qulay */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 14px;
+  border: 0;
+  font-weight: 650;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn-primary {
+  background: var(--ink);
+  color: #fff;
+}
+:root[data-theme='dark'] .btn-primary {
+  color: #0f1430;
+}
+.btn-secondary {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.btn-block {
+  width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid var(--marker);
+  outline-offset: 2px;
+}
+
+/* Pastki qotirilgan panel (Boshlash, Keyingi va h.k.) */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 12px 16px calc(12px + var(--safe-bottom));
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+}
+.bottom-bar-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  gap: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

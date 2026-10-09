@@ -1,0 +1,19 @@
+# Lokal dasturlash uchun: faqat Postgres (5433-portda, chunki 5432 band bo'lishi mumkin).
+#   docker compose -f docker-compose.dev.yml up -d
+# Keyin backend: DB_URL=jdbc:postgresql://localhost:5433/test_system mvn spring-boot:run
+name: test-system-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: test_system
+      POSTGRES_USER: test_system
+      POSTGRES_PASSWORD: test_system
+    ports:
+      - "127.0.0.1:${DEV_DB_PORT:-5433}:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_dev_data:

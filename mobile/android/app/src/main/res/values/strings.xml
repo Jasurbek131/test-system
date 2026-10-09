@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Test tizimi</string>
+    <string name="title_activity_main">Test tizimi</string>
+    <string name="package_name">uz.testtizimi.app</string>
+    <string name="custom_url_scheme">uz.testtizimi.app</string>
+</resources>
