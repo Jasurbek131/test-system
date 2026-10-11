@@ -3,6 +3,7 @@ package uz.testsystem.test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
@@ -22,4 +23,9 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
             group by sq.session.id
             """)
     List<Object[]> countAnswered(Collection<Long> sessionIds);
+
+    /** Foydalanuvchining barcha sessiyalarini o'chiradi. session_questions va test_session_topics bazada ON DELETE CASCADE bilan o'chadi. */
+    @Modifying
+    @Query("delete from TestSession s where s.user.id = :userId")
+    int deleteAllByUserId(Long userId);
 }

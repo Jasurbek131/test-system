@@ -16,6 +16,7 @@ export const testApi = {
   result: (id: number) => svc.result(id),
   retryWrong: (id: number) => svc.retryWrong(id),
   history: (page: number, size: number) => svc.history(page, size),
+  clearHistory: () => svc.clearHistory(),
 }
 
 export const statsApi = {

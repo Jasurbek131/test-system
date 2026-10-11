@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { NButton, NCard, NDataTable, NTag, useMessage, type DataTableColumns } from 'naive-ui'
+import { NButton, NCard, NDataTable, NTag, useDialog, useMessage, type DataTableColumns } from 'naive-ui'
 import { testApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import type { SessionSummary } from '@/types'
@@ -9,6 +9,7 @@ import { formatDate, modeLabel, scoreStatus, topicSummary } from '@/utils/format
 
 const router = useRouter()
 const message = useMessage()
+const dialog = useDialog()
 const rows = ref<SessionSummary[]>([])
 const loading = ref(false)
 const pagination = reactive({
@@ -30,6 +31,25 @@ async function load(page = pagination.page) {
   } finally {
     loading.value = false
   }
+}
+
+function clearHistory() {
+  dialog.warning({
+    title: 'Tarixni tozalash',
+    content:
+      "Barcha yechgan testlaringiz, natijalar va statistika o'chiriladi. Fanlar va savollar o'zgarmaydi. Bu amalni ortga qaytarib bo'lmaydi.",
+    positiveText: 'Tozalash',
+    negativeText: 'Bekor qilish',
+    onPositiveClick: async () => {
+      try {
+        await testApi.clearHistory()
+        message.success('Tarix tozalandi')
+        await load(1)
+      } catch (e) {
+        message.error(errorMessage(e))
+      }
+    },
+  })
 }
 
 const columns: DataTableColumns<SessionSummary> = [
@@ -83,6 +103,7 @@ onMounted(() => load(1))
   <div class="page">
     <div class="page-header">
       <h1>Testlar tarixi</h1>
+      <NButton v-if="pagination.itemCount > 0" type="error" secondary @click="clearHistory">Tarixni tozalash</NButton>
     </div>
     <NCard content-style="padding: 0">
       <NDataTable

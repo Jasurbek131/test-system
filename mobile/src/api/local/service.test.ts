@@ -124,6 +124,22 @@ describe('test oqimi', () => {
     await expect(svc.answer(id, q0.id, q0.options[0].id)).rejects.toBeInstanceOf(AppError)
   })
 
+  it('tarixni tozalaydi, savollar saqlanib qoladi', async () => {
+    const { s, topics } = await subj('Fan A')
+    const { id } = await svc.createTest({ subjectId: s.id, topicIds: topics.map((t) => t.id), questionCount: 3, mode: 'LEARNING' })
+    const q0 = (await svc.getSession(id)).questions[0]
+    await svc.answer(id, q0.id, q0.options[0].id)
+    await svc.finish(id)
+
+    await svc.clearHistory()
+    expect((await svc.history(0, 20)).total).toBe(0)
+    const stats = await svc.myStats()
+    expect(stats.totalTests).toBe(0)
+    expect(stats.totalAnswered).toBe(0)
+    await expect(svc.getSession(id)).rejects.toBeInstanceOf(AppError)
+    expect((await svc.listSubjects()).find((x) => x.name === 'Fan A')!.questionCount).toBe(30)
+  })
+
   it('noto\'g\'ri so\'rovlarni rad etadi', async () => {
     const a = await subj('Fan A')
     const b = await subj('Fan B')

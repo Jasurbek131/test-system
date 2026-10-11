@@ -321,6 +321,14 @@ export async function history(page: number, size: number): Promise<Page<SessionS
   return { items, page: p, size: sz, total: all.length }
 }
 
+/** Tarixni tozalash: faqat testlar o'chadi, fan/mavzu/savollarga tegilmaydi (backenddagi clearHistory kabi). */
+export async function clearHistory(): Promise<void> {
+  await db.transaction('rw', [db.sessions, db.sessionQuestions], async () => {
+    await db.sessionQuestions.clear()
+    await db.sessions.clear()
+  })
+}
+
 // ---------------------------------------------------------------- statistika
 
 /**

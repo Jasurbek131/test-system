@@ -173,6 +173,29 @@ class TestFlowIntegrationTest {
         call(get("/api/tests/" + sessionId), null, 404);
     }
 
+    @Test
+    void clearHistoryRemovesOnlyOwnSessionsAndKeepsQuestions() throws Exception {
+        JsonNode subject = firstSubject();
+        long subjectId = subject.get("id").asLong();
+        Map<String, Object> req = Map.of("subjectId", subjectId, "topicIds", topicIds(subjectId), "questionCount", 2);
+        long otherSessionId = call(post("/api/tests"), req, 201).get("id").asLong();
+        String otherToken = token;
+
+        registerUser();
+        long sessionId = call(post("/api/tests"), req, 201).get("id").asLong();
+        long questionCount = call(get("/api/subjects"), null, 200).get(0).get("questionCount").asLong();
+
+        call(delete("/api/tests/history"), null, 204);
+
+        assertThat(call(get("/api/tests/history"), null, 200).get("total").asLong()).isZero();
+        assertThat(call(get("/api/stats/me"), null, 200).get("totalTests").asLong()).isZero();
+        call(get("/api/tests/" + sessionId), null, 404);
+        assertThat(call(get("/api/subjects"), null, 200).get(0).get("questionCount").asLong()).isEqualTo(questionCount);
+
+        token = otherToken;
+        call(get("/api/tests/" + otherSessionId), null, 200);
+    }
+
     private JsonNode firstSubject() throws Exception {
         JsonNode subjects = call(get("/api/subjects"), null, 200);
         assertThat(subjects.size()).isGreaterThanOrEqualTo(2);

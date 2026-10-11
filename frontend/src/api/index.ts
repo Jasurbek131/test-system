@@ -44,6 +44,7 @@ export const testApi = {
   retryWrong: (id: number) => data(http.post<{ id: number }>(`/tests/${id}/retry-wrong`)),
   history: (page: number, size: number) =>
     data(http.get<Page<SessionSummary>>('/tests/history', { params: { page, size } })),
+  clearHistory: () => http.delete('/tests/history').then(() => undefined),
 }
 
 export const statsApi = {

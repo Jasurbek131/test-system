@@ -137,6 +137,7 @@ Yangi fan (masalan, 6-sinf Biologiya) qo'shishning ikki yo'li bor:
 | GET | `/api/tests/{id}/result` | to'liq tahlil |
 | POST | `/api/tests/{id}/retry-wrong` | xatolardan yangi test |
 | GET | `/api/tests/history?page&size` | tarix |
+| DELETE | `/api/tests/history` | tarixni tozalash (faqat o'z testlari; savollar o'chmaydi) |
 | GET | `/api/stats/me` | statistika |
 | * | `/api/admin/subjects`, `/api/admin/topics`, `/api/admin/questions`, `/api/admin/import` | admin |
 

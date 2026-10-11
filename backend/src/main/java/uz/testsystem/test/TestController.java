@@ -29,6 +29,12 @@ public class TestController {
         return testService.history(user.id(), page, size);
     }
 
+    @DeleteMapping("/history")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void clearHistory(@AuthenticationPrincipal AuthUser user) {
+        testService.clearHistory(user.id());
+    }
+
     @GetMapping("/{id}")
     public SessionView get(@AuthenticationPrincipal AuthUser user, @PathVariable Long id) {
         return testService.get(user.id(), id);

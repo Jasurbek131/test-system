@@ -206,6 +206,12 @@ public class TestService {
                 s.getStartedAt(), s.getFinishedAt(), s.getTopics().stream().map(Topic::getName).toList()));
     }
 
+    /** Tarixni tozalash: faqat foydalanuvchining testlari o'chadi, fan/mavzu/savollarga tegilmaydi. */
+    @Transactional
+    public void clearHistory(Long userId) {
+        sessionRepository.deleteAllByUserId(userId);
+    }
+
     // ---------------------------------------------------------------- yordamchi
 
     private ResultView buildResult(TestSession s) {

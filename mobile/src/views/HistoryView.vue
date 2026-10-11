@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { NIcon } from 'naive-ui'
-import { ChevronForward, PlayCircle } from '@vicons/ionicons5'
+import { NIcon, useDialog, useMessage } from 'naive-ui'
+import { ChevronForward, PlayCircle, TrashOutline } from '@vicons/ionicons5'
 import { testApi } from '@/api'
+import { errorMessage } from '@/api/http'
 import type { SessionSummary } from '@/types'
 import { formatDate, modeLabel, topicSummary } from '@/utils/format'
 import GradeMark from '@m/components/GradeMark.vue'
@@ -11,6 +12,8 @@ import { grade } from '@m/utils/grade'
 
 const PAGE = 20
 const router = useRouter()
+const dialog = useDialog()
+const message = useMessage()
 const items = ref<SessionSummary[]>([])
 const total = ref(0)
 const page = ref(0)
@@ -25,12 +28,35 @@ async function load(next: number) {
 }
 onMounted(() => load(0))
 
+function clearHistory() {
+  dialog.warning({
+    title: 'Tarixni tozalaysizmi?',
+    content: "Barcha yechgan testlaringiz, natijalar va statistika o'chiriladi. Fanlar va savollar o'zgarmaydi.",
+    positiveText: 'Tozalash',
+    negativeText: 'Bekor qilish',
+    onPositiveClick: async () => {
+      try {
+        await testApi.clearHistory()
+        message.success('Tarix tozalandi')
+        await load(0)
+      } catch (e) {
+        message.error(errorMessage(e))
+      }
+    },
+  })
+}
+
 const open = (s: SessionSummary) => router.push(s.status === 'FINISHED' ? `/test/${s.id}/result` : `/test/${s.id}`)
 </script>
 
 <template>
   <main class="screen">
-    <h1 class="screen-title" style="padding-top: 12px">Tarix</h1>
+    <div class="head">
+      <h1 class="screen-title" style="padding-top: 12px">Tarix</h1>
+      <button v-if="total > 0" class="clear" aria-label="Tarixni tozalash" @click="clearHistory">
+        <NIcon :component="TrashOutline" size="18" /> Tozalash
+      </button>
+    </div>
 
     <div v-if="loaded && !items.length" class="empty">
       <p>Hali test yechilmagan.</p>
@@ -58,6 +84,29 @@ const open = (s: SessionSummary) => router.push(s.status === 'FINISHED' ? `/test
 </template>
 
 <style scoped>
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #d03050;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+.clear:active {
+  background: rgba(208, 48, 80, 0.1);
+}
 .list {
   display: flex;
   flex-direction: column;
