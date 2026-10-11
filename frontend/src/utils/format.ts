@@ -15,7 +15,11 @@ export const difficultyType: Record<Difficulty, 'success' | 'warning' | 'error'>
 export const modeLabel: Record<TestMode, string> = {
   LEARNING: "O'rganish",
   EXAM: 'Imtihon',
+  BLOCK: 'Blok test',
 }
+
+/** Ballni chiroyli ko'rsatish: 93 -> "93", 52.7 -> "52.7" */
+export const formatScore = (n: number | null | undefined) => (n == null ? '—' : String(Math.round(n * 10) / 10))
 
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—'
@@ -28,9 +32,24 @@ export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   const s = seconds % 60
-  if (h > 0) return `${h} soat ${m} daq`
+  if (h > 0) return m > 0 ? `${h} soat ${m} daq` : `${h} soat`
   if (m > 0) return `${m} daq ${s} son`
   return `${s} son`
+}
+
+/** Guruh ichida fanning qisqa nomi: ("1-sinf Matematika", "Matematika") -> "1-sinf" */
+export function shortSubjectName(subjectName: string, groupName: string): string {
+  const rest = subjectName.replace(new RegExp(groupName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '').trim()
+  return rest || subjectName
+}
+
+/** Teskari sanoq uchun: 7265 -> "2:01:05", 125 -> "2:05" */
+export function formatClock(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
 }
 
 /** Foizga qarab rang: progress va teglar uchun. */

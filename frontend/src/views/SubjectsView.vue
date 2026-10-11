@@ -35,6 +35,16 @@ const start = (s: Subject) => router.push({ path: '/test/new', query: { subjectI
       </div>
     </div>
 
+    <NCard v-if="!loading && subjects.length > 1" class="block-banner" @click="router.push('/block/new')">
+      <div class="block-banner-body">
+        <div>
+          <div class="subject-name">Blok test (DTM uslubida)</div>
+          <div class="muted">Bir nechta fanni tanlang, har bir fan alohida bo'limda, natija ballda hisoblanadi</div>
+        </div>
+        <NButton type="primary" @click.stop="router.push('/block/new')">Blok testni boshlash</NButton>
+      </div>
+    </NCard>
+
     <NGrid v-if="loading" cols="1 s:2 l:3" responsive="screen" :x-gap="16" :y-gap="16">
       <NGridItem v-for="i in 3" :key="i">
         <NCard><NSkeleton text :repeat="3" /></NCard>
@@ -68,6 +78,17 @@ const start = (s: Subject) => router.push({ path: '/test/new', query: { subjectI
 </template>
 
 <style scoped>
+.block-banner {
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+.block-banner-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 .subject-card {
   cursor: pointer;
   height: 100%;

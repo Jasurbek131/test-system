@@ -22,7 +22,12 @@ public final class ImportDtos {
     public record ImportTopic(String name, String description, List<ImportQuestion> questions) {
     }
 
-    public record ImportRequest(String subject, String subjectDescription, List<ImportTopic> topics) {
+    /**
+     * {@code group} – ixtiyoriy, blok test guruhi (berilmasa fan nomidan: "2-sinf Matematika" -> "Matematika").
+     * {@code scoreWeight} – ixtiyoriy, guruhning 1 savol balli; faqat guruh yangi yaratilganda qo'llanadi.
+     */
+    public record ImportRequest(String subject, String subjectDescription, String group, Double scoreWeight,
+                                List<ImportTopic> topics) {
     }
 
     public record ImportError(String path, String message) {

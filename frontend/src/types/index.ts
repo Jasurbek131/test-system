@@ -1,6 +1,6 @@
 export type Role = 'ADMIN' | 'USER'
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD'
-export type TestMode = 'LEARNING' | 'EXAM'
+export type TestMode = 'LEARNING' | 'EXAM' | 'BLOCK'
 export type TestStatus = 'IN_PROGRESS' | 'FINISHED'
 
 export interface User {
@@ -34,6 +34,11 @@ export interface Subject {
   name: string
   description: string | null
   active: boolean
+  /** Blok test guruhi: "1-sinf Matematika" va "2-sinf Matematika" -> "Matematika" */
+  groupId: number
+  groupName: string
+  /** Guruhning 1 ta to'g'ri javob uchun balli (blok test) */
+  scoreWeight: number
   topicCount: number
   questionCount: number
   createdAt: string
@@ -58,6 +63,11 @@ export interface OptionView {
 export interface QuestionView {
   id: number
   orderIndex: number
+  subjectId: number
+  subjectName: string
+  /** Blok testda savol qaysi fan bo'limiga tegishli (Matematika, Biologiya); oddiy testda null */
+  groupId: number | null
+  groupName: string | null
   topicId: number
   topicName: string
   text: string
@@ -70,9 +80,19 @@ export interface QuestionView {
   explanation: string | null
 }
 
+/** Blok testdagi fan guruhi va undan tanlangan sinflar */
+export interface SessionGroup {
+  groupId: number
+  groupName: string
+  subjectNames: string[]
+  questionCount: number
+  scoreWeight: number
+}
+
 export interface SessionView {
   id: number
-  subjectId: number
+  /** Blok testda null, subjectName – fanlar nomi vergul bilan */
+  subjectId: number | null
   subjectName: string
   mode: TestMode
   status: TestStatus
@@ -81,7 +101,12 @@ export interface SessionView {
   finishedAt: string | null
   correctCount: number | null
   scorePercent: number | null
+  /** Vaqt chegarasi (blok testda har bir fanga 1 soat), null – cheklanmagan */
+  timeLimitSeconds: number | null
+  /** Server bo'yicha qolgan vaqt */
+  remainingSeconds: number | null
   topics: { id: number; name: string }[]
+  groups: SessionGroup[]
   questions: QuestionView[]
 }
 
@@ -104,9 +129,23 @@ export interface TopicResult {
   percent: number
 }
 
+export interface GroupResult {
+  groupId: number
+  groupName: string
+  subjectNames: string[]
+  scoreWeight: number
+  total: number
+  correct: number
+  wrong: number
+  unanswered: number
+  percent: number
+  score: number
+  maxScore: number
+}
+
 export interface ResultView {
   id: number
-  subjectId: number
+  subjectId: number | null
   subjectName: string
   mode: TestMode
   questionCount: number
@@ -114,16 +153,21 @@ export interface ResultView {
   wrongCount: number
   unansweredCount: number
   scorePercent: number
+  /** score, maxScore, byGroup – faqat blok testda */
+  score: number | null
+  maxScore: number | null
   startedAt: string
   finishedAt: string | null
   durationSeconds: number
+  timeLimitSeconds: number | null
+  byGroup: GroupResult[]
   byTopic: TopicResult[]
   questions: QuestionView[]
 }
 
 export interface SessionSummary {
   id: number
-  subjectId: number
+  subjectId: number | null
   subjectName: string
   mode: TestMode
   status: TestStatus
@@ -131,9 +175,13 @@ export interface SessionSummary {
   answeredCount: number
   correctCount: number | null
   scorePercent: number | null
+  score: number | null
+  maxScore: number | null
   startedAt: string
   finishedAt: string | null
   topicNames: string[]
+  /** Blok testda: "Matematika (1-sinf, 2-sinf)" */
+  groupLabels: string[]
 }
 
 export interface MyStats {

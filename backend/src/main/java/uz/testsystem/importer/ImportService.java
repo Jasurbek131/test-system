@@ -12,6 +12,7 @@ import uz.testsystem.question.QuestionDtos.OptionRequest;
 import uz.testsystem.question.QuestionRepository;
 import uz.testsystem.question.QuestionService;
 import uz.testsystem.subject.Subject;
+import uz.testsystem.subject.SubjectGroupService;
 import uz.testsystem.subject.SubjectRepository;
 import uz.testsystem.topic.Topic;
 import uz.testsystem.topic.TopicRepository;
@@ -24,6 +25,7 @@ import java.util.List;
 public class ImportService {
 
     private final SubjectRepository subjectRepository;
+    private final SubjectGroupService groupService;
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
 
@@ -46,6 +48,9 @@ public class ImportService {
             subject = new Subject();
             subject.setName(subjectName);
             subject.setDescription(blankToNull(req.subjectDescription()));
+            String groupName = req.group() == null || req.group().isBlank()
+                    ? SubjectGroupService.defaultGroupName(subjectName) : req.group();
+            subject.setGroup(groupService.findOrCreate(groupName, req.scoreWeight()));
             subjectRepository.save(subject);
             subjectCreated = true;
         }

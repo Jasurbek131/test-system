@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -35,6 +36,9 @@ class TestFlowIntegrationTest {
 
     @Autowired
     ObjectMapper json;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     String token;
 
@@ -171,6 +175,188 @@ class TestFlowIntegrationTest {
 
         registerUser();
         call(get("/api/tests/" + sessionId), null, 404);
+    }
+
+    @Test
+    void blockExamKeepsSubjectsInSectionsAndScoresByWeight() throws Exception {
+        JsonNode subjects = call(get("/api/subjects"), null, 200);
+        Map<Long, Double> weights = new HashMap<>();
+        subjects.forEach(s -> weights.put(s.get("groupId").asLong(), s.get("scoreWeight").asDouble()));
+        assertThat(weights.values()).contains(1.1, 2.1);
+        JsonNode java = subjects.get(0);
+        JsonNode math = subjects.get(1);
+        long g1 = java.get("groupId").asLong();
+        long g2 = math.get("groupId").asLong();
+
+        long sessionId = call(post("/api/tests/block"), Map.of("groups", List.of(
+                block(g1, List.of(java.get("id").asLong()), 4),
+                block(g2, List.of(math.get("id").asLong()), 3))), 201).get("id").asLong();
+
+        JsonNode session = call(get("/api/tests/" + sessionId), null, 200);
+        assertThat(session.get("mode").asText()).isEqualTo("BLOCK");
+        assertThat(session.get("subjectId").isNull()).isTrue();
+        assertThat(session.get("groups")).hasSize(2);
+        assertThat(session.get("questions")).hasSize(7);
+        Map<Long, Integer> perSubject = new HashMap<>();
+        session.get("questions").forEach(q -> {
+            perSubject.merge(q.get("subjectId").asLong(), 1, Integer::sum);
+            assertThat(q.get("correctOptionId").isNull()).isTrue();
+        });
+        assertThat(perSubject).containsEntry(java.get("id").asLong(), 4).containsEntry(math.get("id").asLong(), 3);
+        // fanlar alohida bo'limlarda: avval 4 ta Java, keyin 3 ta Matematika
+        assertThat(groupSequence(session)).containsExactly(g1, g1, g1, g1, g2, g2, g2);
+        assertThat(session.get("questions").get(0).get("groupName").asText()).isEqualTo(java.get("groupName").asText());
+
+        // imtihondagidek: javob yakunlaguncha ochilmaydi va o'zgartirilishi mumkin
+        JsonNode q0 = session.get("questions").get(0);
+        JsonNode answer = call(post("/api/tests/" + sessionId + "/answers"), Map.of(
+                "sessionQuestionId", q0.get("id").asLong(),
+                "optionId", q0.get("options").get(0).get("id").asLong()), 200);
+        assertThat(answer.get("correct").isNull()).isTrue();
+        for (JsonNode q : session.get("questions")) {
+            call(post("/api/tests/" + sessionId + "/answers"), Map.of(
+                    "sessionQuestionId", q.get("id").asLong(),
+                    "optionId", q.get("options").get(1).get("id").asLong()), 200);
+        }
+
+        JsonNode result = call(post("/api/tests/" + sessionId + "/finish"), null, 200);
+        assertThat(result.get("byGroup")).hasSize(2);
+        double expected = 0;
+        for (JsonNode gr : result.get("byGroup")) {
+            double w = weights.get(gr.get("groupId").asLong());
+            assertThat(gr.get("scoreWeight").asDouble()).isEqualTo(w);
+            assertThat(gr.get("score").asDouble()).isEqualTo(Math.round(gr.get("correct").asInt() * w * 10) / 10.0);
+            expected += gr.get("correct").asInt() * w;
+        }
+        assertThat(result.get("score").asDouble()).isEqualTo(Math.round(expected * 10) / 10.0);
+        double max = Math.round((4 * weights.get(g1) + 3 * weights.get(g2)) * 10) / 10.0;
+        assertThat(result.get("maxScore").asDouble()).isEqualTo(max);
+
+        JsonNode item = call(get("/api/tests/history"), null, 200).get("items").get(0);
+        assertThat(item.get("mode").asText()).isEqualTo("BLOCK");
+        assertThat(item.get("maxScore").asDouble()).isEqualTo(max);
+        assertThat(item.get("groupLabels")).hasSize(2);
+        assertThat(call(get("/api/stats/me"), null, 200).get("bySubject")).hasSize(2);
+
+        if (result.get("correctCount").asInt() < 7) {
+            long retryId = call(post("/api/tests/" + sessionId + "/retry-wrong"), null, 201).get("id").asLong();
+            JsonNode retry = call(get("/api/tests/" + retryId), null, 200);
+            assertThat(retry.get("mode").asText()).isEqualTo("BLOCK");
+            assertThat(retry.get("questionCount").asInt()).isEqualTo(7 - result.get("correctCount").asInt());
+            List<Long> seq = groupSequence(retry);
+            List<Long> sorted = new ArrayList<>(seq);
+            sorted.sort(Comparator.comparing(g -> g == g1 ? 0 : 1));
+            assertThat(seq).isEqualTo(sorted);
+        }
+    }
+
+    @Test
+    void blockGroupCombinesGradesWithCommonCountAndWeight() throws Exception {
+        JsonNode subjects = call(get("/api/subjects"), null, 200);
+        List<JsonNode> math = new ArrayList<>();
+        subjects.forEach(s -> {
+            if (s.get("groupName").asText().equals("Matematika")) {
+                math.add(s);
+            }
+        });
+        assertThat(math).hasSize(2);
+        long groupId = math.get(0).get("groupId").asLong();
+        assertThat(math.get(1).get("groupId").asLong()).isEqualTo(groupId);
+        assertThat(math.get(1).get("scoreWeight").asDouble()).isEqualTo(1.1);
+        List<Long> ids = math.stream().map(s -> s.get("id").asLong()).toList();
+
+        long sessionId = call(post("/api/tests/block"), Map.of("groups", List.of(block(groupId, ids, 10))), 201)
+                .get("id").asLong();
+        JsonNode session = call(get("/api/tests/" + sessionId), null, 200);
+        assertThat(session.get("timeLimitSeconds").asInt()).isEqualTo(3600);
+        assertThat(session.get("groups")).hasSize(1);
+        assertThat(session.get("groups").get(0).get("subjectNames")).hasSize(2);
+        // sinflar orasida teng: 5 + 5
+        Map<Long, Integer> perSubject = new HashMap<>();
+        session.get("questions").forEach(q -> perSubject.merge(q.get("subjectId").asLong(), 1, Integer::sum));
+        assertThat(perSubject).containsEntry(ids.get(0), 5).containsEntry(ids.get(1), 5);
+
+        JsonNode result = call(post("/api/tests/" + sessionId + "/finish"), null, 200);
+        assertThat(result.get("byGroup")).hasSize(1);
+        assertThat(result.get("byGroup").get(0).get("total").asInt()).isEqualTo(10);
+        assertThat(result.get("maxScore").asDouble()).isEqualTo(11.0);
+        assertThat(result.get("subjectName").asText()).isEqualTo("Matematika (qo'shimcha)");
+
+        // faqat bitta sinf ham tanlanishi mumkin
+        call(post("/api/tests/block"), Map.of("groups", List.of(block(groupId, List.of(ids.get(1)), 10))), 201);
+        call(post("/api/tests/block"), Map.of("groups", List.of(block(groupId, List.of(ids.get(1)), 11))), 400);
+    }
+
+    @Test
+    void blockExamHasOneHourPerSubjectAndFinishesWhenTimeIsUp() throws Exception {
+        JsonNode subjects = call(get("/api/subjects"), null, 200);
+        JsonNode s1 = subjects.get(0);
+        JsonNode s2 = subjects.get(1);
+        long sessionId = call(post("/api/tests/block"), Map.of("groups", List.of(
+                block(s1.get("groupId").asLong(), List.of(s1.get("id").asLong()), 2),
+                block(s2.get("groupId").asLong(), List.of(s2.get("id").asLong()), 2))), 201).get("id").asLong();
+
+        JsonNode session = call(get("/api/tests/" + sessionId), null, 200);
+        assertThat(session.get("timeLimitSeconds").asInt()).isEqualTo(2 * 3600);
+        assertThat(session.get("remainingSeconds").asLong()).isBetween(2 * 3600L - 60, 2 * 3600L);
+        JsonNode q0 = session.get("questions").get(0);
+        call(post("/api/tests/" + sessionId + "/answers"), Map.of(
+                "sessionQuestionId", q0.get("id").asLong(),
+                "optionId", q0.get("options").get(0).get("id").asLong()), 200);
+
+        // vaqt tugadi: javob qabul qilinmaydi, test yakunlanadi, sarflangan vaqt = 2 soat
+        jdbc.update("update test_sessions set started_at = started_at - interval '3 hours' where id = ?", sessionId);
+        JsonNode q1 = session.get("questions").get(1);
+        call(post("/api/tests/" + sessionId + "/answers"), Map.of(
+                "sessionQuestionId", q1.get("id").asLong(),
+                "optionId", q1.get("options").get(0).get("id").asLong()), 400);
+        JsonNode result = call(get("/api/tests/" + sessionId + "/result"), null, 200);
+        assertThat(result.get("durationSeconds").asLong()).isEqualTo(2 * 3600L);
+        assertThat(result.get("unansweredCount").asInt()).isEqualTo(3);
+        assertThat(result.get("score").isNull()).isFalse();
+
+        // tarix ochilganda ham vaqti o'tgan test yakunlanadi
+        long second = call(post("/api/tests/block"), Map.of("groups", List.of(
+                block(s1.get("groupId").asLong(), List.of(s1.get("id").asLong()), 1))), 201).get("id").asLong();
+        jdbc.update("update test_sessions set started_at = started_at - interval '2 hours' where id = ?", second);
+        JsonNode item = call(get("/api/tests/history"), null, 200).get("items").get(0);
+        assertThat(item.get("id").asLong()).isEqualTo(second);
+        assertThat(item.get("status").asText()).isEqualTo("FINISHED");
+
+        // oddiy testda vaqt chegarasi yo'q
+        long plain = call(post("/api/tests"), Map.of("subjectId", s1.get("id").asLong(),
+                "topicIds", topicIds(s1.get("id").asLong()), "questionCount", 1), 201).get("id").asLong();
+        assertThat(call(get("/api/tests/" + plain), null, 200).get("timeLimitSeconds").isNull()).isTrue();
+    }
+
+    @Test
+    void blockExamValidation() throws Exception {
+        JsonNode subjects = call(get("/api/subjects"), null, 200);
+        JsonNode java = subjects.get(0);
+        long s1 = java.get("id").asLong();
+        long g1 = java.get("groupId").asLong();
+        long g2 = subjects.get(1).get("groupId").asLong();
+        long available = java.get("questionCount").asLong();
+        call(post("/api/tests/block"), Map.of("groups", List.of()), 400);
+        call(post("/api/tests/block"), Map.of("groups", List.of(block(g1, List.of(), 1))), 400);
+        call(post("/api/tests/block"), Map.of("groups", List.of(
+                block(g1, List.of(s1), 1), block(g1, List.of(s1), 1))), 400);
+        call(post("/api/tests/block"), Map.of("groups", List.of(block(g1, List.of(s1), available + 1))), 400);
+        // fan boshqa guruhga tegishli
+        call(post("/api/tests/block"), Map.of("groups", List.of(block(g2, List.of(s1), 1))), 400);
+        call(post("/api/tests/block"), Map.of("groups", List.of(block(999999, List.of(s1), 1))), 404);
+        call(post("/api/tests"), Map.of("subjectId", s1, "topicIds", topicIds(s1), "questionCount", 1,
+                "mode", "BLOCK"), 400);
+    }
+
+    private static List<Long> groupSequence(JsonNode session) {
+        List<Long> seq = new ArrayList<>();
+        session.get("questions").forEach(q -> seq.add(q.get("groupId").asLong()));
+        return seq;
+    }
+
+    private static Map<String, Object> block(long groupId, List<Long> subjectIds, long questionCount) {
+        return Map.of("groupId", groupId, "subjectIds", subjectIds, "questionCount", questionCount);
     }
 
     @Test

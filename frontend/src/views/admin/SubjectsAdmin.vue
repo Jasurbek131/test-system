@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h, onMounted, reactive, ref } from 'vue'
+import { computed, h, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NButton,
@@ -7,7 +7,9 @@ import {
   NDataTable,
   NForm,
   NFormItem,
+  NAutoComplete,
   NInput,
+  NInputNumber,
   NModal,
   NSpace,
   NSwitch,
@@ -31,7 +33,17 @@ const show = ref(false)
 const saving = ref(false)
 const editingId = ref<number | null>(null)
 const formRef = ref<FormInst | null>(null)
-const form = reactive({ name: '', description: '', active: true })
+const form = reactive({ name: '', description: '', active: true, groupName: '', scoreWeight: 1 as number | null })
+const groupOptions = computed(() => {
+  const names = [...new Set(rows.value.map((s) => s.groupName))]
+  const q = form.groupName.trim().toLowerCase()
+  return names.filter((n) => !q || n.toLowerCase().includes(q))
+})
+// Mavjud guruh tanlansa, ball shu guruhniki
+function onGroupSelect(name: string) {
+  const g = rows.value.find((s) => s.groupName === name)
+  if (g) form.scoreWeight = g.scoreWeight
+}
 
 async function load() {
   loading.value = true
@@ -46,13 +58,19 @@ async function load() {
 
 function openCreate() {
   editingId.value = null
-  Object.assign(form, { name: '', description: '', active: true })
+  Object.assign(form, { name: '', description: '', active: true, groupName: '', scoreWeight: 1 })
   show.value = true
 }
 
 function openEdit(s: Subject) {
   editingId.value = s.id
-  Object.assign(form, { name: s.name, description: s.description ?? '', active: s.active })
+  Object.assign(form, {
+    name: s.name,
+    description: s.description ?? '',
+    active: s.active,
+    groupName: s.groupName,
+    scoreWeight: s.scoreWeight,
+  })
   show.value = true
 }
 
@@ -64,7 +82,13 @@ async function save() {
   }
   saving.value = true
   try {
-    const body = { name: form.name, description: form.description || null, active: form.active }
+    const body = {
+      name: form.name,
+      description: form.description || null,
+      active: form.active,
+      groupName: form.groupName.trim() || null,
+      scoreWeight: form.scoreWeight ?? 1,
+    }
     if (editingId.value) await adminApi.updateSubject(editingId.value, body)
     else await adminApi.createSubject(body)
     message.success('Saqlandi')
@@ -110,6 +134,12 @@ const columns: DataTableColumns<Subject> = [
   { title: 'Mavzular', key: 'topicCount', width: 100 },
   { title: 'Savollar', key: 'questionCount', width: 100 },
   {
+    title: 'Blok test guruhi',
+    key: 'groupName',
+    width: 170,
+    render: (s) => h('span', [s.groupName, h('span', { class: 'muted' }, ` · ${s.scoreWeight} ball`)]),
+  },
+  {
     title: 'Holat',
     key: 'active',
     width: 100,
@@ -149,6 +179,18 @@ onMounted(load)
         </NFormItem>
         <NFormItem label="Tavsif" path="description">
           <NInput v-model:value="form.description" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }" />
+        </NFormItem>
+        <NFormItem label="Blok test guruhi" path="groupName">
+          <NAutoComplete
+            v-model:value="form.groupName"
+            :options="groupOptions"
+            placeholder="Bo'sh qolsa nomidan: «2-sinf Matematika» → «Matematika»"
+            @select="(v: string | number) => onGroupSelect(String(v))"
+          />
+        </NFormItem>
+        <NFormItem label="Guruhning 1 savol balli" path="scoreWeight">
+          <NInputNumber v-model:value="form.scoreWeight" :min="0.1" :max="100" :step="0.1" :precision="1" style="width: 140px" />
+          <span class="muted" style="margin-left: 12px; font-size: 13px">Guruhdagi barcha fanlarga qo'llanadi</span>
         </NFormItem>
         <NFormItem label="Faol" path="active">
           <NSwitch v-model:value="form.active" />

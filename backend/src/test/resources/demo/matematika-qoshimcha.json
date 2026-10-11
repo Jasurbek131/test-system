@@ -1,0 +1,207 @@
+{
+  "subject": "Matematika qo'shimcha",
+  "subjectDescription": "Blok testda Matematika guruhiga kiradi",
+  "group": "Matematika",
+  "topics": [
+    {
+      "name": "Qo'shish 1",
+      "questions": [
+        {
+          "text": "1 + 1 = ?",
+          "explanation": "1 + 1 = 2",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "2",
+              "correct": true
+            },
+            {
+              "text": "3",
+              "correct": false
+            },
+            {
+              "text": "1",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "2 + 2 = ?",
+          "explanation": "2 + 2 = 4",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "4",
+              "correct": true
+            },
+            {
+              "text": "5",
+              "correct": false
+            },
+            {
+              "text": "3",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "3 + 3 = ?",
+          "explanation": "3 + 3 = 6",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "6",
+              "correct": true
+            },
+            {
+              "text": "7",
+              "correct": false
+            },
+            {
+              "text": "5",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "4 + 4 = ?",
+          "explanation": "4 + 4 = 8",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "8",
+              "correct": true
+            },
+            {
+              "text": "9",
+              "correct": false
+            },
+            {
+              "text": "7",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "5 + 5 = ?",
+          "explanation": "5 + 5 = 10",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "10",
+              "correct": true
+            },
+            {
+              "text": "11",
+              "correct": false
+            },
+            {
+              "text": "9",
+              "correct": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Qo'shish 2",
+      "questions": [
+        {
+          "text": "11 + 11 = ?",
+          "explanation": "11 + 11 = 22",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "22",
+              "correct": true
+            },
+            {
+              "text": "23",
+              "correct": false
+            },
+            {
+              "text": "21",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "12 + 12 = ?",
+          "explanation": "12 + 12 = 24",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "24",
+              "correct": true
+            },
+            {
+              "text": "25",
+              "correct": false
+            },
+            {
+              "text": "23",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "13 + 13 = ?",
+          "explanation": "13 + 13 = 26",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "26",
+              "correct": true
+            },
+            {
+              "text": "27",
+              "correct": false
+            },
+            {
+              "text": "25",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "14 + 14 = ?",
+          "explanation": "14 + 14 = 28",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "28",
+              "correct": true
+            },
+            {
+              "text": "29",
+              "correct": false
+            },
+            {
+              "text": "27",
+              "correct": false
+            }
+          ]
+        },
+        {
+          "text": "15 + 15 = ?",
+          "explanation": "15 + 15 = 30",
+          "difficulty": "EASY",
+          "options": [
+            {
+              "text": "30",
+              "correct": true
+            },
+            {
+              "text": "31",
+              "correct": false
+            },
+            {
+              "text": "29",
+              "correct": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

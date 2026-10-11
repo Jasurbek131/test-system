@@ -32,6 +32,28 @@ export function pickQuestions(idsByTopic: Map<number, number[]>, count: number, 
   return shuffle(result, random)
 }
 
+/**
+ * Backenddagi QuestionPicker.allocate: savollar sonini guruhlar (sinflar) orasida teng taqsimlaydi,
+ * savoli tugagan guruh o'tkazib yuboriladi. Natija: [kalit -> nechta savol].
+ */
+export function allocate<K>(available: Map<K, number>, count: number, random: () => number = Math.random): Map<K, number> {
+  const total = [...available.values()].reduce((s, n) => s + n, 0)
+  if (count < 0 || count > total) throw new Error(`count must be between 0 and ${total}`)
+  const keys = shuffle([...available.keys()], random)
+  const result = new Map<K, number>([...available.keys()].map((k) => [k, 0]))
+  let given = 0
+  while (given < count) {
+    for (const k of keys) {
+      if (given === count) break
+      if (result.get(k)! < available.get(k)!) {
+        result.set(k, result.get(k)! + 1)
+        given++
+      }
+    }
+  }
+  return result
+}
+
 export function percent(part: number, total: number): number {
   if (total === 0) return 0
   return Math.round((part * 1000) / total) / 10

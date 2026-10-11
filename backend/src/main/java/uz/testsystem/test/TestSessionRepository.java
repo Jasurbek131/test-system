@@ -24,6 +24,14 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
             """)
     List<Object[]> countAnswered(Collection<Long> sessionIds);
 
+    /** Vaqti tugagan, lekin yakunlanmagan sessiyalar (yakunlash uchun). */
+    @Query(value = """
+            select * from test_sessions
+            where user_id = :userId and status = 'IN_PROGRESS' and time_limit_seconds is not null
+              and started_at + make_interval(secs => time_limit_seconds) <= now()
+            """, nativeQuery = true)
+    List<TestSession> findExpired(Long userId);
+
     /** Foydalanuvchining barcha sessiyalarini o'chiradi. session_questions va test_session_topics bazada ON DELETE CASCADE bilan o'chadi. */
     @Modifying
     @Query("delete from TestSession s where s.user.id = :userId")

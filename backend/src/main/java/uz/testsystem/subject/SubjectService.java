@@ -20,6 +20,7 @@ public class SubjectService {
     private final SubjectRepository subjectRepository;
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
+    private final SubjectGroupService groupService;
 
     @Transactional(readOnly = true)
     public List<SubjectDto> listActive() {
@@ -74,6 +75,18 @@ public class SubjectService {
         if (req.active() != null) {
             subject.setActive(req.active());
         }
+        // Guruh ko'rsatilmasa: yangi fan uchun nomidan ("2-sinf Matematika" -> "Matematika"), mavjud fanda o'zgarmaydi
+        String groupName = blankToNull(req.groupName());
+        if (groupName == null && subject.getGroup() == null) {
+            groupName = SubjectGroupService.defaultGroupName(name);
+        }
+        if (groupName != null) {
+            subject.setGroup(groupService.findOrCreate(groupName, req.scoreWeight()));
+        }
+        // Ball guruhga tegishli: o'zgartirilsa guruhdagi barcha fanlarga ta'sir qiladi
+        if (req.scoreWeight() != null) {
+            subject.getGroup().setScoreWeight(req.scoreWeight());
+        }
     }
 
     private List<SubjectDto> toDtos(List<Subject> subjects, boolean onlyActive) {
@@ -85,8 +98,8 @@ public class SubjectService {
     }
 
     private SubjectDto toDto(Subject s, long topicCount, long questionCount) {
-        return new SubjectDto(s.getId(), s.getName(), s.getDescription(), s.isActive(),
-                topicCount, questionCount, s.getCreatedAt());
+        return new SubjectDto(s.getId(), s.getName(), s.getDescription(), s.isActive(), s.getGroup().getId(),
+                s.getGroup().getName(), s.getGroup().getScoreWeight(), topicCount, questionCount, s.getCreatedAt());
     }
 
     static String blankToNull(String s) {

@@ -29,7 +29,8 @@ public class TestSession {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    /** Oddiy testda – tanlangan fan; blok testda {@code null}, guruhlar {@link #groups} da, sinflar {@link #subjects} da. */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id")
     private Subject subject;
 
@@ -56,6 +57,26 @@ public class TestSession {
     @Column(name = "score_percent")
     private Double scorePercent;
 
+    /** Blok test balli (yakunlangach). */
+    private Double score;
+
+    @Column(name = "max_score")
+    private Double maxScore;
+
+    /** Vaqt chegarasi (blok testda har bir fanga 1 soat); {@code null} – cheklanmagan. */
+    @Column(name = "time_limit_seconds")
+    private Integer timeLimitSeconds;
+
+    @ElementCollection
+    @CollectionTable(name = "test_session_groups", joinColumns = @JoinColumn(name = "session_id"))
+    @OrderBy("orderIndex ASC")
+    private List<SessionGroup> groups = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "test_session_subjects", joinColumns = @JoinColumn(name = "session_id"))
+    @OrderBy("orderIndex ASC")
+    private List<SessionSubject> subjects = new ArrayList<>();
+
     @ManyToMany
     @JoinTable(name = "test_session_topics",
             joinColumns = @JoinColumn(name = "session_id"),
@@ -70,6 +91,21 @@ public class TestSession {
     public void addQuestion(SessionQuestion sq) {
         sq.setSession(this);
         questions.add(sq);
+    }
+
+    public boolean isBlock() {
+        return mode == TestMode.BLOCK;
+    }
+
+    /** Test qachongacha yechilishi mumkin; vaqt chegarasi bo'lmasa {@code null}. */
+    public Instant deadline() {
+        return timeLimitSeconds == null ? null : startedAt.plusSeconds(timeLimitSeconds);
+    }
+
+    /** Vaqti tugagan, lekin hali yakunlanmagan test. */
+    public boolean isExpired(Instant now) {
+        Instant deadline = deadline();
+        return !isFinished() && deadline != null && !now.isBefore(deadline);
     }
 
     public boolean isFinished() {

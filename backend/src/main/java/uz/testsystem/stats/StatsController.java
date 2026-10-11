@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import uz.testsystem.security.AuthUser;
 import uz.testsystem.stats.StatsDtos.MyStats;
+import uz.testsystem.test.TestService;
 
 @RestController
 @RequestMapping("/api/stats")
@@ -14,9 +15,11 @@ import uz.testsystem.stats.StatsDtos.MyStats;
 public class StatsController {
 
     private final StatsService statsService;
+    private final TestService testService;
 
     @GetMapping("/me")
     public MyStats me(@AuthenticationPrincipal AuthUser user) {
+        testService.finishExpired(user.id());
         return statsService.myStats(user.id());
     }
 }

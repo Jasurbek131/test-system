@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { NIcon } from 'naive-ui'
-import { ChevronForward, Moon, PlayCircle, Sunny } from '@vicons/ionicons5'
+import { ChevronForward, Moon, PlayCircle, School, Sunny } from '@vicons/ionicons5'
 import { subjectApi, testApi } from '@/api'
 import type { SessionSummary, Subject } from '@/types'
 import { useThemeStore } from '@/stores/theme'
@@ -47,8 +47,17 @@ onMounted(async () => {
       <div class="resume-text">
         <div class="resume-title">Testni davom ettirish</div>
         <div class="muted small">
-          {{ unfinished.subjectName }} · {{ unfinished.answeredCount }} / {{ unfinished.questionCount }} javob
+          {{ unfinished.mode === 'BLOCK' ? 'Blok test' : unfinished.subjectName }} · {{ unfinished.answeredCount }} / {{ unfinished.questionCount }} javob
         </div>
+      </div>
+      <NIcon :component="ChevronForward" size="20" class="muted" />
+    </button>
+
+    <button v-if="subjects.length > 1" class="block-entry card" @click="router.push('/block')">
+      <span class="block-icon"><NIcon :component="School" size="26" /></span>
+      <div class="subject-text">
+        <div class="subject-name">Blok test</div>
+        <div class="muted small">DTM uslubida: bir nechta fan, natija ballda</div>
       </div>
       <NIcon :component="ChevronForward" size="20" class="muted" />
     </button>
@@ -159,6 +168,30 @@ onMounted(async () => {
   border-radius: 999px;
   background: var(--grid);
   color: var(--ink);
+}
+.block-entry {
+  margin-top: 14px;
+  width: 100%;
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  text-align: left;
+}
+.block-entry:active {
+  transform: scale(0.99);
+}
+.block-icon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .skeleton {
   height: 80px;

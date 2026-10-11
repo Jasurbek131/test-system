@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NIcon, useDialog, useMessage } from 'naive-ui'
 import { CheckmarkCircle, ChevronBack, ChevronDown, Close, CloseCircle } from '@vicons/ionicons5'
 import { testApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import type { QuestionView, SessionView } from '@/types'
-import { difficultyLabel, formatDuration, optionLetter } from '@/utils/format'
+import { difficultyLabel, formatClock, formatDuration, optionLetter, shortSubjectName } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,11 +35,61 @@ const elapsed = computed(() =>
 )
 const isLast = computed(() => index.value === qs.value.length - 1)
 
+// Blok test: savollar fanlar bo'yicha bo'limlarga ajratiladi (Matematika, Biologiya)
+interface Section {
+  id: number
+  name: string
+  items: { x: QuestionView; i: number }[]
+}
+const block = computed(() => session.value?.mode === 'BLOCK')
+const sections = computed<Section[]>(() => {
+  if (!block.value) return [{ id: 0, name: '', items: qs.value.map((x, i) => ({ x, i })) }]
+  const byGroup = new Map<number, Section>()
+  qs.value.forEach((x, i) => {
+    const id = x.groupId ?? 0
+    const section = byGroup.get(id) ?? { id, name: x.groupName ?? '', items: [] }
+    section.items.push({ x, i })
+    byGroup.set(id, section)
+  })
+  const order = session.value?.groups.map((g) => g.groupId) ?? []
+  return [...byGroup.values()].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
+})
+const currentSection = computed(() => sections.value.find((s) => s.items.some(({ i }) => i === index.value)))
+const sectionAnswered = (s: Section) => s.items.filter(({ x }) => x.answered).length
+function goSection(s: Section) {
+  go((s.items.find(({ x }) => !x.answered) ?? s.items[0]).i)
+}
+// Fan ichidagi sinf: "1-sinf Matematika" -> "1-sinf" (nomida sinf bo'lmasa – bo'sh)
+const grade = (x: QuestionView) =>
+  x.groupName && shortSubjectName(x.subjectName, x.groupName) !== x.subjectName ? shortSubjectName(x.subjectName, x.groupName) : ''
+
+// Vaqt chegarasi (blok test): qolgan vaqt tugaganda test avtomatik yakunlanadi
+const deadline = ref<number | null>(null)
+const remaining = computed(() =>
+  deadline.value === null ? null : Math.max(0, Math.ceil((deadline.value - now.value) / 1000)),
+)
+let timeUp = false
+watch(remaining, async (r) => {
+  if (r !== 0 || timeUp) return
+  timeUp = true
+  busy.value = true
+  // Muddat aniq o'tib bo'lgach yakunlaymiz: yakunlash vaqti aynan muddat bo'ladi
+  await new Promise((r) => setTimeout(r, 1500))
+  try {
+    await testApi.finish(id)
+  } catch {
+    /* lokal servis ham vaqti tugagan testni yakunlaydi */
+  }
+  message.warning('Vaqt tugadi. Test yakunlandi')
+  router.replace(`/test/${id}/result`)
+})
+
 onMounted(async () => {
   try {
     const s = await testApi.get(id)
     if (s.status === 'FINISHED') return router.replace(`/test/${id}/result`)
     session.value = s
+    if (s.remainingSeconds !== null) deadline.value = Date.now() + s.remainingSeconds * 1000
     const open = s.questions.findIndex((x) => !x.answered)
     index.value = open === -1 ? 0 : open
   } catch (e) {
@@ -170,18 +220,30 @@ function touchEnd(e: TouchEvent) {
         {{ index + 1 }} / {{ qs.length || '–' }}
         <NIcon :component="ChevronDown" size="16" />
       </button>
-      <div class="time tabular muted">{{ formatDuration(elapsed) }}</div>
+      <div v-if="remaining !== null" class="time tabular countdown" :class="{ low: remaining < 300 }">{{ formatClock(remaining) }}</div>
+      <div v-else class="time tabular muted">{{ formatDuration(elapsed) }}</div>
     </header>
     <div class="progress" role="progressbar" :aria-valuenow="answered" :aria-valuemax="qs.length">
       <div class="progress-fill" :style="{ width: qs.length ? `${(answered / qs.length) * 100}%` : '0' }" />
     </div>
+    <nav v-if="block" class="sections" aria-label="Fanlar">
+      <button
+        v-for="sec in sections"
+        :key="sec.id"
+        class="section-chip tabular"
+        :class="{ on: sec.id === currentSection?.id }"
+        @click="goSection(sec)"
+      >
+        {{ sec.name }} <span class="section-count">{{ sectionAnswered(sec) }}/{{ sec.items.length }}</span>
+      </button>
+    </nav>
 
     <main v-if="q" class="body" @touchstart.passive="touchStart" @touchend.passive="touchEnd">
       <Transition :name="direction" mode="out-in">
         <section :key="q.id" class="question">
           <div class="meta">
-            <span class="topic">{{ q.topicName.replace(/^\d+\.\s*/, '') }}</span>
-            <span class="level muted">{{ difficultyLabel[q.difficulty] }}</span>
+            <span class="topic">{{ block ? q.groupName : q.topicName.replace(/^\d+\.\s*/, '') }}</span>
+            <span class="level muted">{{ block && grade(q) ? `${grade(q)} · ` : '' }}{{ difficultyLabel[q.difficulty] }}</span>
           </div>
           <h2 class="text">{{ q.text }}</h2>
 
@@ -229,17 +291,23 @@ function touchEnd(e: TouchEvent) {
             <span class="sheet-title">Savollar</span>
             <span class="muted tabular">{{ answered }}/{{ qs.length }} javob</span>
           </div>
-          <div class="cells">
-            <button
-              v-for="(x, i) in qs"
-              :key="x.id"
-              class="cell tabular"
-              :class="[cellState(x), { cur: i === index }]"
-              @click="go(i); sheet = false"
-            >
-              {{ i + 1 }}
-            </button>
-          </div>
+          <template v-for="sec in sections" :key="sec.id">
+            <div v-if="sec.name" class="cells-title tabular">
+              <span>{{ sec.name }}</span>
+              <span class="muted">{{ sectionAnswered(sec) }}/{{ sec.items.length }}</span>
+            </div>
+            <div class="cells">
+              <button
+                v-for="{ x, i } in sec.items"
+                :key="x.id"
+                class="cell tabular"
+                :class="[cellState(x), { cur: i === index }]"
+                @click="go(i); sheet = false"
+              >
+                {{ i + 1 }}
+              </button>
+            </div>
+          </template>
           <div class="legend muted">
             <template v-if="learning">
               <span><i class="dot ok" />to'g'ri</span>
@@ -301,6 +369,14 @@ function touchEnd(e: TouchEvent) {
   text-align: right;
   padding-right: 8px;
   font-size: 14px;
+}
+.countdown {
+  font-weight: 650;
+  font-size: 15px;
+  color: var(--ink);
+}
+.countdown.low {
+  color: #d03050;
 }
 .progress {
   height: 4px;
@@ -515,6 +591,46 @@ function touchEnd(e: TouchEvent) {
 .sheet-enter-from .sheet-panel,
 .sheet-leave-to .sheet-panel {
   transform: translateY(100%);
+}
+.sections {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.section-chip {
+  flex: none;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 17px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 650;
+  font-size: 14px;
+}
+.section-chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+:root[data-theme='dark'] .section-chip.on {
+  color: #0f1430;
+}
+.section-count {
+  font-weight: 500;
+  opacity: 0.75;
+  margin-left: 4px;
+}
+.cells-title {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 650;
+  margin: 4px 0 10px;
+}
+.cells + .cells-title {
+  margin-top: 18px;
 }
 .cells {
   display: grid;

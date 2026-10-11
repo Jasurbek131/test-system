@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -18,6 +19,35 @@ import java.util.Random;
 public final class QuestionPicker {
 
     private QuestionPicker() {
+    }
+
+    /**
+     * Savollar sonini guruhlar (masalan sinflar) orasida teng taqsimlaydi: navbatma-navbat bittadan, savoli
+     * tugagan guruh o'tkazib yuboriladi. Natija: [kalit -> nechta savol olinadi].
+     */
+    public static <K> Map<K, Integer> allocate(Map<K, Integer> available, int count, Random random) {
+        int total = available.values().stream().mapToInt(Integer::intValue).sum();
+        if (count < 0 || count > total) {
+            throw new IllegalArgumentException("count must be between 0 and " + total);
+        }
+        List<K> keys = new ArrayList<>(available.keySet());
+        // count kalitlar soniga bo'linmasa, ortiqcha savol har safar boshqa guruhga tushadi
+        Collections.shuffle(keys, random);
+        Map<K, Integer> result = new LinkedHashMap<>();
+        available.keySet().forEach(k -> result.put(k, 0));
+        int given = 0;
+        while (given < count) {
+            for (K key : keys) {
+                if (given == count) {
+                    break;
+                }
+                if (result.get(key) < available.get(key)) {
+                    result.merge(key, 1, Integer::sum);
+                    given++;
+                }
+            }
+        }
+        return result;
     }
 
     public static List<Long> pick(Map<Long, List<Long>> questionIdsByTopic, int count, Random random) {

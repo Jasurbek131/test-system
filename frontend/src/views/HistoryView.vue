@@ -5,7 +5,7 @@ import { NButton, NCard, NDataTable, NTag, useDialog, useMessage, type DataTable
 import { testApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import type { SessionSummary } from '@/types'
-import { formatDate, modeLabel, scoreStatus, topicSummary } from '@/utils/format'
+import { formatDate, formatScore, modeLabel, scoreStatus, topicSummary } from '@/utils/format'
 
 const router = useRouter()
 const message = useMessage()
@@ -59,7 +59,9 @@ const columns: DataTableColumns<SessionSummary> = [
     key: 'subjectName',
     minWidth: 180,
     render: (r) =>
-      h('div', [h('div', { style: 'font-weight:500' }, r.subjectName), h('div', { class: 'muted', style: 'font-size:12px' }, topicSummary(r.topicNames))]),
+      r.mode === 'BLOCK'
+        ? h('div', [h('div', { style: 'font-weight:500' }, 'Blok test'), h('div', { class: 'muted', style: 'font-size:12px' }, r.groupLabels.join(', '))])
+        : h('div', [h('div', { style: 'font-weight:500' }, r.subjectName), h('div', { class: 'muted', style: 'font-size:12px' }, topicSummary(r.topicNames))]),
   },
   {
     title: 'Rejim',
@@ -74,7 +76,9 @@ const columns: DataTableColumns<SessionSummary> = [
     render: (r) =>
       r.status === 'FINISHED'
         ? h(NTag, { type: scoreStatus(r.scorePercent ?? 0), size: 'small' }, () =>
-            `${r.correctCount}/${r.questionCount} · ${r.scorePercent}%`,
+            r.mode === 'BLOCK'
+              ? `${formatScore(r.score)} / ${formatScore(r.maxScore)} ball`
+              : `${r.correctCount}/${r.questionCount} · ${r.scorePercent}%`,
           )
         : h(NTag, { type: 'info', size: 'small' }, () => `Jarayonda: ${r.answeredCount}/${r.questionCount}`),
   },

@@ -14,6 +14,7 @@ export const testApi = {
   answer: (id: number, sessionQuestionId: number, optionId: number) => svc.answer(id, sessionQuestionId, optionId),
   finish: (id: number) => svc.finish(id),
   result: (id: number) => svc.result(id),
+  createBlock: (groups: { groupId: number; subjectIds: number[]; questionCount: number }[]) => svc.createBlockTest(groups),
   retryWrong: (id: number) => svc.retryWrong(id),
   history: (page: number, size: number) => svc.history(page, size),
   clearHistory: () => svc.clearHistory(),

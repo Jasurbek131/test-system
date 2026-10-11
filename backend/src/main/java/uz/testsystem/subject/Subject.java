@@ -23,6 +23,11 @@ public class Subject {
 
     private String description;
 
+    /** Blok test uchun guruh (masalan "1-sinf Matematika" -> "Matematika"); ball guruhda. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "group_id")
+    private SubjectGroup group;
+
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 

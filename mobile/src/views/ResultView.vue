@@ -6,7 +6,7 @@ import { CheckmarkCircle, CloseCircle, RemoveCircle } from '@vicons/ionicons5'
 import { testApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import type { QuestionView, ResultView } from '@/types'
-import { formatDuration, modeLabel } from '@/utils/format'
+import { formatDuration, formatScore, modeLabel, shortSubjectName } from '@/utils/format'
 import AppBar from '@m/components/AppBar.vue'
 import GradeMark from '@m/components/GradeMark.vue'
 import { grade, gradeWord } from '@m/utils/grade'
@@ -20,6 +20,7 @@ const filter = ref<'wrong' | 'all' | 'correct'>('all')
 const retrying = ref(false)
 
 const g = computed(() => grade(r.value?.scorePercent ?? 0))
+const isBlock = computed(() => r.value?.mode === 'BLOCK')
 const toRetry = computed(() => (r.value ? r.value.wrongCount + r.value.unansweredCount : 0))
 const state = (q: QuestionView) => (!q.answered ? 'skip' : q.correct ? 'ok' : 'bad')
 const list = computed(() => {
@@ -60,9 +61,10 @@ async function retry() {
       <GradeMark :grade="g" :size="112" />
       <div class="sheet-text">
         <div class="word">{{ gradeWord[g] }}</div>
-        <div class="score tabular"><b>{{ r.correctCount }}</b> / {{ r.questionCount }} to'g'ri</div>
-        <div class="muted small">{{ r.subjectName }}</div>
-        <div class="muted small">{{ modeLabel[r.mode] }} · {{ formatDuration(r.durationSeconds) }} · {{ r.scorePercent }}%</div>
+        <div v-if="isBlock" class="score tabular"><b>{{ formatScore(r.score) }}</b> / {{ formatScore(r.maxScore) }} ball</div>
+        <div v-else class="score tabular"><b>{{ r.correctCount }}</b> / {{ r.questionCount }} to'g'ri</div>
+        <div v-if="!isBlock" class="muted small">{{ r.subjectName }}</div>
+        <div class="muted small">{{ modeLabel[r.mode] }} · {{ formatDuration(r.durationSeconds) }}<template v-if="r.timeLimitSeconds"> / {{ formatDuration(r.timeLimitSeconds) }}</template> · {{ r.scorePercent }}%</div>
       </div>
     </section>
 
@@ -74,10 +76,27 @@ async function retry() {
 
     <div class="actions">
       <button v-if="toRetry" class="btn btn-primary btn-block" :disabled="retrying" @click="retry">Xatolarni qayta yechish · {{ toRetry }}</button>
-      <button class="btn btn-secondary btn-block" @click="router.replace(`/subject/${r.subjectId}`)">Yangi test</button>
+      <button class="btn btn-secondary btn-block" @click="router.replace(isBlock ? '/block' : `/subject/${r.subjectId}`)">Yangi test</button>
     </div>
 
-    <template v-if="r.byTopic.length > 1">
+    <template v-if="isBlock">
+      <div class="section-label">Fanlar bo'yicha</div>
+      <div class="card topics">
+        <div v-for="sr in r.byGroup" :key="sr.groupId" class="topic-row">
+          <div class="topic-head">
+            <span class="topic-name">
+              <b>{{ sr.groupName }}</b>
+              <span class="muted"> · {{ sr.subjectNames.map((n) => shortSubjectName(n, sr.groupName)).join(', ') }}</span>
+            </span>
+            <span class="tabular"><b>{{ formatScore(sr.score) }}</b> <span class="muted">/ {{ formatScore(sr.maxScore) }}</span></span>
+          </div>
+          <div class="bar"><div class="bar-fill" :class="sr.percent >= 70 ? 'ok' : sr.percent >= 50 ? 'mid' : 'bad'" :style="{ width: `${Math.max(sr.percent, 3)}%` }" /></div>
+          <div class="muted small tabular subject-detail">{{ sr.correct }}/{{ sr.total }} to'g'ri × {{ formatScore(sr.scoreWeight) }} ball</div>
+        </div>
+      </div>
+    </template>
+
+    <template v-if="!isBlock && r.byTopic.length > 1">
       <div class="section-label">Mavzular bo'yicha</div>
       <div class="card topics">
         <div v-for="t in r.byTopic" :key="t.topicId" class="topic-row">
@@ -101,7 +120,7 @@ async function retry() {
       <div class="review-head">
         <span class="num tabular">{{ i + 1 }}</span>
         <NIcon :component="state(q) === 'ok' ? CheckmarkCircle : state(q) === 'bad' ? CloseCircle : RemoveCircle" size="20" class="state-icon" />
-        <span class="muted small topic-small">{{ q.topicName.replace(/^\d+\.\s*/, '') }}</span>
+        <span class="muted small topic-small">{{ isBlock ? `${q.groupName} · ` : '' }}{{ q.topicName.replace(/^\d+\.\s*/, '') }}</span>
       </div>
       <div class="review-q">{{ q.text }}</div>
       <div v-if="state(q) !== 'ok'" class="answer bad-answer">
@@ -114,6 +133,9 @@ async function retry() {
 </template>
 
 <style scoped>
+.subject-detail {
+  margin-top: 4px;
+}
 .sheet {
   display: flex;
   align-items: center;

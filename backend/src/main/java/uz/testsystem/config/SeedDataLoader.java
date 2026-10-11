@@ -15,11 +15,17 @@ import uz.testsystem.importer.ImportService;
 import uz.testsystem.subject.SubjectRepository;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Ishga tushishda seed fayllardagi fanlarni yuklaydi (admin import formatida).
  * Har bir fayl alohida tekshiriladi: shu nomli fan bazada bo'lsa, fayl o'tkazib yuboriladi.
- * Shuning uchun yangi fan (masalan, 6-sinf biologiya) uchun seed papkaga yangi fayl qo'shish yetarli.
+ * Shuning uchun yangi fan (masalan, 6-sinf biologiya) uchun seed papkaga yangi fayl qo'shish yetarli:
+ * u nomi bo'yicha guruhga ("6-sinf Biologiya" -> "Biologiya") avtomatik qo'shiladi.
  */
 @Slf4j
 @Component
@@ -38,11 +44,18 @@ public class SeedDataLoader implements ApplicationRunner {
             return;
         }
         Resource[] files = new PathMatchingResourcePatternResolver().getResources(props.seed().location());
+        Map<Resource, ImportRequest> requests = new LinkedHashMap<>();
         for (Resource file : files) {
-            ImportRequest request;
             try (InputStream in = file.getInputStream()) {
-                request = objectMapper.readValue(in, ImportRequest.class);
+                requests.put(file, objectMapper.readValue(in, ImportRequest.class));
             }
+        }
+        // Guruh balli guruh yaratilganda olinadi: ball ko'rsatilgan fayllar birinchi yuklansin, aks holda
+        // masalan "2-sinf Matematika" oldin yuklanib, Matematika guruhi standart 1.0 ball bilan yaratilib qolardi
+        List<Resource> ordered = new ArrayList<>(requests.keySet());
+        ordered.sort(Comparator.comparing(f -> requests.get(f).scoreWeight() == null));
+        for (Resource file : ordered) {
+            ImportRequest request = requests.get(file);
             if (request.subject() == null || subjectRepository.findByNameIgnoreCase(request.subject().trim()).isPresent()) {
                 continue;
             }

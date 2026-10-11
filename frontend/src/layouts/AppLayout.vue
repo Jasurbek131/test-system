@@ -24,6 +24,7 @@ import {
   MenuOutline,
   MoonOutline,
   PersonCircleOutline,
+  SchoolOutline,
   SunnyOutline,
   TimeOutline,
 } from '@vicons/ionicons5'
@@ -42,6 +43,7 @@ const link = (to: string, label: string) => () => h(RouterLink, { to }, { defaul
 const menuOptions = computed<MenuOption[]>(() => {
   const items: MenuOption[] = [
     { key: '/', label: link('/', 'Fanlar'), icon: icon(BookOutline) },
+    { key: '/block/new', label: link('/block/new', 'Blok test'), icon: icon(SchoolOutline) },
     { key: '/history', label: link('/history', 'Tarix'), icon: icon(TimeOutline) },
     { key: '/stats', label: link('/stats', 'Statistika'), icon: icon(BarChartOutline) },
   ]
@@ -66,6 +68,7 @@ const activeKey = computed(() => {
   if (p.startsWith('/admin')) return p
   if (p.startsWith('/history')) return '/history'
   if (p.startsWith('/stats')) return '/stats'
+  if (p.startsWith('/block')) return '/block/new'
   return '/'
 })
 

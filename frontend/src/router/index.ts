@@ -24,6 +24,7 @@ const router = createRouter({
       children: [
         { path: '', name: 'home', component: () => import('@/views/SubjectsView.vue'), meta: { title: 'Fanlar' } },
         { path: 'test/new', component: () => import('@/views/NewTestView.vue'), meta: { title: 'Yangi test' } },
+        { path: 'block/new', component: () => import('@/views/BlockTestView.vue'), meta: { title: 'Blok test' } },
         { path: 'test/:id', component: () => import('@/views/TestView.vue'), meta: { title: 'Test' } },
         { path: 'test/:id/result', component: () => import('@/views/ResultView.vue'), meta: { title: 'Natija' } },
         { path: 'history', component: () => import('@/views/HistoryView.vue'), meta: { title: 'Tarix' } },

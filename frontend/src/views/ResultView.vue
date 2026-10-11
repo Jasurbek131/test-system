@@ -21,7 +21,7 @@ import OptionList from '@/components/OptionList.vue'
 import { testApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import type { QuestionView, ResultView } from '@/types'
-import { formatDate, formatDuration, modeLabel, scoreStatus } from '@/utils/format'
+import { formatDate, formatDuration, formatScore, modeLabel, scoreStatus, shortSubjectName } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,6 +51,11 @@ const filtered = computed(() => {
   if (filter.value === 'all') return qs.map((q, i) => ({ q, i }))
   return qs.map((q, i) => ({ q, i })).filter(({ q }) => qState(q) === filter.value)
 })
+
+const isBlock = computed(() => result.value?.mode === 'BLOCK')
+const newTestLink = computed(() =>
+  isBlock.value || !result.value ? '/block/new' : { path: '/test/new', query: { subjectId: result.value.subjectId } },
+)
 
 const toRetry = computed(() => (result.value ? result.value.wrongCount + result.value.unansweredCount : 0))
 
@@ -83,10 +88,11 @@ async function retryWrong() {
     <template v-else>
       <div class="page-header">
         <div>
-          <h1>Natija: {{ result.subjectName }}</h1>
+          <h1>Natija: {{ isBlock ? 'Blok test' : result.subjectName }}</h1>
           <div class="muted">
             {{ modeLabel[result.mode] }} rejimi · {{ formatDate(result.finishedAt) }} ·
-            {{ formatDuration(result.durationSeconds) }}
+            {{ formatDuration(result.durationSeconds) }}<template v-if="result.timeLimitSeconds">
+              / {{ formatDuration(result.timeLimitSeconds) }}</template>
           </div>
         </div>
       </div>
@@ -100,9 +106,16 @@ async function retryWrong() {
             :stroke-width="9"
             style="width: 130px"
           >
-            <div class="score-value tabular">{{ result.scorePercent }}%</div>
+            <div v-if="isBlock" class="tabular score-center">
+              <div class="score-value">{{ formatScore(result.score) }}</div>
+              <div class="muted score-max">/ {{ formatScore(result.maxScore) }} ball</div>
+            </div>
+            <div v-else class="score-value tabular">{{ result.scorePercent }}%</div>
           </NProgress>
           <div class="score-body">
+            <div v-if="isBlock" class="score-title tabular">
+              {{ formatScore(result.score) }} ball <span class="muted">({{ result.scorePercent }}%)</span>
+            </div>
             <NGrid cols="3" :x-gap="12">
               <NGridItem><NStatistic label="To'g'ri" :value="result.correctCount" /></NGridItem>
               <NGridItem><NStatistic label="Xato" :value="result.wrongCount" /></NGridItem>
@@ -116,15 +129,36 @@ async function retryWrong() {
             <NButton v-if="toRetry > 0" type="primary" :loading="retrying" @click="retryWrong">
               Xatolarni qayta yechish ({{ toRetry }})
             </NButton>
-            <NButton @click="router.push({ path: '/test/new', query: { subjectId: result.subjectId } })">
-              Yangi test
-            </NButton>
+            <NButton @click="router.push(newTestLink)">Yangi test</NButton>
             <NButton quaternary @click="router.push('/history')">Tarix</NButton>
           </NSpace>
         </template>
       </NCard>
 
-      <NCard title="Mavzular bo'yicha" size="small" style="margin-bottom: 16px">
+      <NCard v-if="isBlock" title="Fanlar bo'yicha" size="small" style="margin-bottom: 16px">
+        <div v-for="sr in result.byGroup" :key="sr.groupId" class="topic-row">
+          <div class="topic-head">
+            <span>
+              <b>{{ sr.groupName }}</b>
+              <span class="muted"> · {{ sr.subjectNames.map((n) => shortSubjectName(n, sr.groupName)).join(', ') }}</span>
+            </span>
+            <span class="tabular"><b>{{ formatScore(sr.score) }}</b> <span class="muted">/ {{ formatScore(sr.maxScore) }} ball</span></span>
+          </div>
+          <NProgress
+            type="line"
+            :percentage="sr.percent"
+            :status="scoreStatus(sr.percent)"
+            :show-indicator="false"
+            :height="8"
+          />
+          <div class="muted subject-detail tabular">
+            {{ sr.correct }} to'g'ri × {{ formatScore(sr.scoreWeight) }} ball · {{ sr.wrong }} xato · {{ sr.unanswered }} javobsiz
+          </div>
+        </div>
+      </NCard>
+
+      <!-- Blok testda mavzular juda ko'p va har birida 1-2 savol bo'ladi, shuning uchun faqat fanlar kesimi -->
+      <NCard v-else title="Mavzular bo'yicha" size="small" style="margin-bottom: 16px">
         <div v-for="t in result.byTopic" :key="t.topicId" class="topic-row">
           <div class="topic-head">
             <span>{{ t.topicName }}</span>
@@ -158,6 +192,7 @@ async function retryWrong() {
       <NCard v-for="{ q, i } in filtered" :key="q.id" size="small" class="review-card">
         <div class="q-meta">
           <span class="q-number tabular">{{ i + 1 }}.</span>
+          <NTag v-if="isBlock" size="small" :bordered="false" type="info">{{ q.groupName }}</NTag>
           <NTag size="small" :bordered="false">{{ q.topicName }}</NTag>
           <NTag v-if="qState(q) === 'correct'" size="small" type="success">To'g'ri</NTag>
           <NTag v-else-if="qState(q) === 'wrong'" size="small" type="error">Xato</NTag>
@@ -183,6 +218,22 @@ async function retryWrong() {
 .score-value {
   font-size: 26px;
   font-weight: 650;
+}
+.score-center {
+  text-align: center;
+  line-height: 1.1;
+}
+.score-max {
+  font-size: 12px;
+}
+.score-title {
+  font-size: 20px;
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+.subject-detail {
+  font-size: 13px;
+  margin-top: 4px;
 }
 .score-body {
   flex: 1;

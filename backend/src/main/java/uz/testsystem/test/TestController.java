@@ -22,6 +22,13 @@ public class TestController {
         return testService.create(user.id(), req);
     }
 
+    @PostMapping("/block")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CreatedResponse createBlock(@AuthenticationPrincipal AuthUser user,
+                                       @Valid @RequestBody CreateBlockTestRequest req) {
+        return testService.createBlock(user.id(), req);
+    }
+
     @GetMapping("/history")
     public PageResponse<SessionSummary> history(@AuthenticationPrincipal AuthUser user,
                                                 @RequestParam(defaultValue = "0") int page,

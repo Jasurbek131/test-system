@@ -41,6 +41,8 @@ export const testApi = {
     data(http.post<AnswerResponse>(`/tests/${id}/answers`, { sessionQuestionId, optionId })),
   finish: (id: number) => data(http.post<ResultView>(`/tests/${id}/finish`)),
   result: (id: number) => data(http.get<ResultView>(`/tests/${id}/result`)),
+  createBlock: (groups: { groupId: number; subjectIds: number[]; questionCount: number }[]) =>
+    data(http.post<{ id: number }>('/tests/block', { groups })),
   retryWrong: (id: number) => data(http.post<{ id: number }>(`/tests/${id}/retry-wrong`)),
   history: (page: number, size: number) =>
     data(http.get<Page<SessionSummary>>('/tests/history', { params: { page, size } })),
@@ -55,6 +57,8 @@ export interface SubjectBody {
   name: string
   description: string | null
   active: boolean
+  groupName: string | null
+  scoreWeight: number
 }
 
 export interface TopicBody {

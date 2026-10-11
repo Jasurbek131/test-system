@@ -5,6 +5,7 @@ import { pickQuestions, percent } from './picker'
 import { importSubject, type SeedFile } from './seed'
 import * as svc from './service'
 import { AppError } from '../errors'
+import type { Subject } from '@/types'
 
 function makeSeed(name: string, topics: number, perTopic: number): SeedFile {
   return {
@@ -72,6 +73,8 @@ describe('test oqimi', () => {
     const s = (await svc.listSubjects()).find((x) => x.name === name)!
     return { s, topics: await svc.listTopics(s.id) }
   }
+  // Blok test so'rovi: bitta sinfli guruh
+  const blk = (s: Subject, questionCount: number) => ({ groupId: s.groupId, subjectIds: [s.id], questionCount })
 
   it('o\'rganish rejimi: javob oldindan berilmaydi, javobdan keyin ochiladi, qayta javob berib bo\'lmaydi', async () => {
     const { s, topics } = await subj('Fan A')
@@ -122,6 +125,118 @@ describe('test oqimi', () => {
     expect(res.questions[0].selectedOptionId).toBe(q0.options[1].id)
     expect((await svc.myStats()).totalAnswered).toBe(1)
     await expect(svc.answer(id, q0.id, q0.options[0].id)).rejects.toBeInstanceOf(AppError)
+  })
+
+  it('blok test: fanlar aralash, natija oxirida, ball fan balli bo\'yicha', async () => {
+    await importSubject({ ...makeSeed('Fan C', 2, 10), scoreWeight: 3.1 })
+    const a = await subj('Fan A')
+    const c = await subj('Fan C')
+    expect(a.s.scoreWeight).toBe(1)
+    expect(c.s.scoreWeight).toBe(3.1)
+
+    const { id } = await svc.createBlockTest([blk(c.s, 5), blk(a.s, 4)])
+    const session = await svc.getSession(id)
+    expect(session.mode).toBe('BLOCK')
+    expect(session.subjectId).toBeNull()
+    expect(session.groups.map((x) => x.groupName)).toEqual(['Fan C', 'Fan A'])
+    expect(session.questions.filter((q) => q.subjectId === c.s.id)).toHaveLength(5)
+    // fanlar alohida bo'limlarda: avval 5 ta Fan C, keyin 4 ta Fan A
+    expect(session.questions.map((q) => q.groupName)).toEqual([...Array(5).fill('Fan C'), ...Array(4).fill('Fan A')])
+    expect(session.questions.every((q) => q.correctOptionId === null)).toBe(true)
+
+    // Fan C dan 3 ta to'g'ri, Fan A dan 1 ta to'g'ri, qolganlari javobsiz
+    const db = (await import('./db')).db
+    let cRight = 0
+    let aRight = 0
+    for (const q of session.questions) {
+      const opts = await db.options.where('questionId').equals((await db.sessionQuestions.get(q.id))!.questionId).toArray()
+      const right = opts.find((o) => o.correct)!.id
+      if (q.subjectId === c.s.id && cRight < 3) {
+        const ans = await svc.answer(id, q.id, right)
+        expect(ans.correct).toBeNull()
+        cRight++
+      } else if (q.subjectId === a.s.id && aRight < 1) {
+        await svc.answer(id, q.id, right)
+        aRight++
+      }
+    }
+
+    const res = await svc.finish(id)
+    expect(res.score).toBe(10.3) // 3 × 3.1 + 1 × 1
+    expect(res.maxScore).toBe(19.5) // 5 × 3.1 + 4 × 1
+    expect(res.byGroup.map((r) => [r.groupName, r.correct, r.score])).toEqual([['Fan C', 3, 9.3], ['Fan A', 1, 1]])
+
+    const hist = (await svc.history(0, 20)).items[0]
+    expect(hist.mode).toBe('BLOCK')
+    expect(hist.score).toBe(10.3)
+    expect(hist.groupLabels).toEqual(['Fan C', 'Fan A'])
+    expect((await svc.myStats()).bySubject.find((x) => x.subjectName === 'Fan C')!.tests).toBe(1)
+
+    const retry = await svc.getSession((await svc.retryWrong(id)).id)
+    expect(retry.mode).toBe('BLOCK')
+    expect(retry.groups.map((x) => [x.groupName, x.questionCount, x.scoreWeight])).toEqual([['Fan C', 2, 3.1], ['Fan A', 3, 1]])
+
+    await expect(svc.createBlockTest([blk(c.s, 21)])).rejects.toThrow('faqat 20 ta')
+    await expect(svc.createBlockTest([blk(c.s, 1), blk(c.s, 1)])).rejects.toBeInstanceOf(AppError)
+    await expect(svc.createBlockTest([{ groupId: c.s.groupId, subjectIds: [a.s.id], questionCount: 1 }])).rejects.toThrow('tegishli emas')
+    await expect(svc.createBlockTest([{ groupId: c.s.groupId, subjectIds: [], questionCount: 1 }])).rejects.toBeInstanceOf(AppError)
+    await expect(svc.createBlockTest([])).rejects.toBeInstanceOf(AppError)
+  })
+
+  it('blok test: bir fanning sinflari bitta guruh – umumiy savollar soni va ball', async () => {
+    await importSubject({ ...makeSeed('1-sinf Fan M', 2, 10), scoreWeight: 1.1 })
+    await importSubject(makeSeed('2-sinf Fan M', 2, 5))
+    const m1 = (await subj('1-sinf Fan M')).s
+    const m2 = (await subj('2-sinf Fan M')).s
+    expect(m1.groupName).toBe('Fan M')
+    expect(m2.groupId).toBe(m1.groupId)
+    // ball faqat 1-sinf faylida berilgan, lekin guruhga umumiy
+    expect(m2.scoreWeight).toBe(1.1)
+
+    const { id } = await svc.createBlockTest([{ groupId: m1.groupId, subjectIds: [m1.id, m2.id], questionCount: 10 }])
+    const session = await svc.getSession(id)
+    expect(session.timeLimitSeconds).toBe(3600)
+    expect(session.groups).toHaveLength(1)
+    expect(session.questions.filter((q) => q.subjectId === m1.id)).toHaveLength(5)
+    expect(session.questions.filter((q) => q.subjectId === m2.id)).toHaveLength(5)
+    const res = await svc.finish(id)
+    expect(res.maxScore).toBe(11)
+    expect(res.subjectName).toBe('Fan M (1-sinf, 2-sinf)')
+    expect(res.byGroup[0].total).toBe(10)
+
+    // faqat bitta sinf
+    await svc.createBlockTest([{ groupId: m1.groupId, subjectIds: [m2.id], questionCount: 10 }])
+    await expect(svc.createBlockTest([{ groupId: m1.groupId, subjectIds: [m2.id], questionCount: 11 }])).rejects.toThrow('faqat 10 ta')
+  })
+
+  it('blok test: har bir fanga 1 soat, vaqt tugaganda yakunlanadi', async () => {
+    const a = await subj('Fan A')
+    const b = await subj('Fan B')
+    const { id } = await svc.createBlockTest([blk(a.s, 2), blk(b.s, 2)])
+    const session = await svc.getSession(id)
+    expect(session.timeLimitSeconds).toBe(7200)
+    expect(session.remainingSeconds).toBeGreaterThan(7190)
+    await svc.answer(id, session.questions[0].id, session.questions[0].options[0].id)
+
+    const db = (await import('./db')).db
+    const shift = async (sid: number, hours: number) => {
+      const s = (await db.sessions.get(sid))!
+      await db.sessions.update(sid, { startedAt: new Date(new Date(s.startedAt).getTime() - hours * 3600_000).toISOString() })
+    }
+    await shift(id, 3)
+    const q1 = session.questions[1]
+    await expect(svc.answer(id, q1.id, q1.options[0].id)).rejects.toThrow('Vaqt tugadi')
+    const res = await svc.result(id)
+    expect(res.durationSeconds).toBe(7200)
+    expect(res.unansweredCount).toBe(3)
+    expect(res.score).not.toBeNull()
+
+    const second = (await svc.createBlockTest([blk(a.s, 1)])).id
+    await shift(second, 2)
+    expect((await svc.history(0, 20)).items[0].status).toBe('FINISHED')
+
+    const plain = await svc.createTest({ subjectId: a.s.id, topicIds: a.topics.map((t) => t.id), questionCount: 1, mode: 'EXAM' })
+    expect((await svc.getSession(plain.id)).timeLimitSeconds).toBeNull()
   })
 
   it('tarixni tozalaydi, savollar saqlanib qoladi', async () => {

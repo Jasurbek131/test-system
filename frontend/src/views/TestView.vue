@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   NAlert,
@@ -16,7 +16,15 @@ import OptionList from '@/components/OptionList.vue'
 import { testApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import type { QuestionView, SessionView } from '@/types'
-import { difficultyLabel, difficultyType, formatDuration, modeLabel, topicSummary } from '@/utils/format'
+import {
+  difficultyLabel,
+  difficultyType,
+  formatClock,
+  formatDuration,
+  modeLabel,
+  shortSubjectName,
+  topicSummary,
+} from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -33,6 +41,13 @@ const now = ref(Date.now())
 let timer: ReturnType<typeof setInterval> | undefined
 
 const isLearning = computed(() => session.value?.mode === 'LEARNING')
+const isBlock = computed(() => session.value?.mode === 'BLOCK')
+const subtitle = computed(() => {
+  const s = session.value
+  if (!s) return ''
+  if (s.mode === 'BLOCK') return s.groups.map((g) => `${g.groupName}: ${g.questionCount} ta`).join(' · ')
+  return topicSummary(s.topics.map((t) => t.name))
+})
 const questions = computed(() => session.value?.questions ?? [])
 const current = computed<QuestionView | undefined>(() => questions.value[index.value])
 const answeredCount = computed(() => questions.value.filter((q) => q.answered).length)
@@ -43,6 +58,59 @@ const progress = computed(() =>
 const elapsed = computed(() =>
   session.value ? Math.max(0, Math.floor((now.value - new Date(session.value.startedAt).getTime()) / 1000)) : 0,
 )
+// Blok test: savollar fanlar bo'yicha bo'limlarga ajratiladi (Matematika, Biologiya); oddiy testda bitta bo'lim
+interface Section {
+  id: number
+  name: string
+  items: { q: QuestionView; i: number }[]
+}
+const sections = computed<Section[]>(() => {
+  if (!isBlock.value) return [{ id: 0, name: '', items: questions.value.map((q, i) => ({ q, i })) }]
+  const byGroup = new Map<number, Section>()
+  questions.value.forEach((q, i) => {
+    const id = q.groupId ?? 0
+    const section = byGroup.get(id) ?? { id, name: q.groupName ?? '', items: [] }
+    section.items.push({ q, i })
+    byGroup.set(id, section)
+  })
+  const order = session.value?.groups.map((g) => g.groupId) ?? []
+  return [...byGroup.values()].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
+})
+const currentSection = computed(() => sections.value.find((s) => s.items.some(({ i }) => i === index.value)))
+const posInSection = computed(() => (currentSection.value?.items.findIndex(({ i }) => i === index.value) ?? 0) + 1)
+const sectionAnswered = (s: Section) => s.items.filter(({ q }) => q.answered).length
+
+// Bo'limga o'tish: birinchi javobsiz savoliga (hammasi javob berilgan bo'lsa – boshiga)
+function goSection(s: Section) {
+  go((s.items.find(({ q }) => !q.answered) ?? s.items[0]).i)
+}
+
+// Vaqt chegarasi (blok test): muddat server bergan qolgan vaqtdan hisoblanadi, kompyuter soati noto'g'ri bo'lsa ham
+const deadline = ref<number | null>(null)
+const remaining = computed(() =>
+  deadline.value === null ? null : Math.max(0, Math.ceil((deadline.value - now.value) / 1000)),
+)
+let timeUp = false
+watch(remaining, (r) => {
+  if (r === 0 && !timeUp) {
+    timeUp = true
+    onTimeUp()
+  }
+})
+
+async function onTimeUp() {
+  finishing.value = true
+  // Server muddati o'tganini o'zi ko'rishi uchun biroz kutamiz: yakunlash vaqti aynan muddat bo'ladi
+  await new Promise((r) => setTimeout(r, 1500))
+  try {
+    await testApi.finish(id)
+  } catch {
+    // server o'zi ham vaqti tugagan testni yakunlaydi
+  }
+  message.warning('Vaqt tugadi. Test yakunlandi')
+  router.replace(`/test/${id}/result`)
+}
+
 const locked = computed(() => !!current.value && isLearning.value && current.value.answered)
 
 onMounted(async () => {
@@ -53,6 +121,7 @@ onMounted(async () => {
       return
     }
     session.value = s
+    if (s.remainingSeconds !== null) deadline.value = Date.now() + s.remainingSeconds * 1000
     // birinchi javob berilmagan savoldan davom ettiramiz
     const firstOpen = s.questions.findIndex((q) => !q.answered)
     index.value = firstOpen === -1 ? 0 : firstOpen
@@ -159,13 +228,16 @@ async function finish() {
     <template v-else>
       <div class="page-header">
         <div>
-          <h1>{{ session.subjectName }}</h1>
+          <h1>{{ isBlock ? 'Blok test' : session.subjectName }}</h1>
           <div class="muted">
-            {{ modeLabel[session.mode] }} rejimi · {{ topicSummary(session.topics.map((t) => t.name)) }}
+            <template v-if="!isBlock">{{ modeLabel[session.mode] }} rejimi · </template>{{ subtitle }}
           </div>
         </div>
         <div class="header-stats tabular">
-          <span class="muted">⏱ {{ formatDuration(elapsed) }}</span>
+          <span v-if="remaining !== null" class="countdown" :class="{ low: remaining < 300 }" title="Qolgan vaqt">
+            ⏳ {{ formatClock(remaining) }}
+          </span>
+          <span v-else class="muted">⏱ {{ formatDuration(elapsed) }}</span>
           <NButton type="primary" :loading="finishing" @click="confirmFinish">Testni yakunlash</NButton>
         </div>
       </div>
@@ -173,6 +245,19 @@ async function finish() {
       <div class="layout">
         <div class="main">
           <NCard size="small" style="margin-bottom: 12px">
+            <div v-if="isBlock" class="sections">
+              <button
+                v-for="sec in sections"
+                :key="sec.id"
+                type="button"
+                class="section-tab"
+                :class="{ active: sec.id === currentSection?.id }"
+                @click="goSection(sec)"
+              >
+                <span class="section-name">{{ sec.name }}</span>
+                <span class="tabular muted">{{ sectionAnswered(sec) }} / {{ sec.items.length }}</span>
+              </button>
+            </div>
             <div class="progress-row tabular">
               <span>Javob berildi: {{ answeredCount }} / {{ questions.length }}</span>
               <span v-if="isLearning" class="muted">To'g'ri: {{ correctSoFar }}</span>
@@ -181,8 +266,19 @@ async function finish() {
           </NCard>
 
           <NCard v-if="current">
+            <div v-if="isBlock" class="section-title">
+              {{ current.groupName }} <span class="muted tabular">· {{ posInSection }} / {{ currentSection?.items.length }}</span>
+            </div>
             <div class="q-meta">
               <span class="q-number tabular">{{ index + 1 }} / {{ questions.length }}</span>
+              <NTag
+                v-if="isBlock && current.groupName && shortSubjectName(current.subjectName, current.groupName) !== current.subjectName"
+                size="small"
+                :bordered="false"
+                type="info"
+              >
+                {{ shortSubjectName(current.subjectName, current.groupName) }}
+              </NTag>
               <NTag size="small" :bordered="false">{{ current.topicName }}</NTag>
               <NTag size="small" :bordered="false" :type="difficultyType[current.difficulty]">
                 {{ difficultyLabel[current.difficulty] }}
@@ -230,19 +326,25 @@ async function finish() {
 
         <aside class="side">
           <NCard size="small" title="Savollar">
-            <div class="nav-grid">
-              <button
-                v-for="(q, i) in questions"
-                :key="q.id"
-                type="button"
-                class="nav-btn tabular"
-                :class="[navState(q), { current: i === index }]"
-                :aria-label="`${i + 1}-savol`"
-                @click="go(i)"
-              >
-                {{ i + 1 }}
-              </button>
-            </div>
+            <template v-for="sec in sections" :key="sec.id">
+              <div v-if="sec.name" class="nav-section tabular">
+                <span>{{ sec.name }}</span>
+                <span class="muted">{{ sectionAnswered(sec) }}/{{ sec.items.length }}</span>
+              </div>
+              <div class="nav-grid">
+                <button
+                  v-for="{ q, i } in sec.items"
+                  :key="q.id"
+                  type="button"
+                  class="nav-btn tabular"
+                  :class="[navState(q), { current: i === index }]"
+                  :aria-label="`${i + 1}-savol`"
+                  @click="go(i)"
+                >
+                  {{ i + 1 }}
+                </button>
+              </div>
+            </template>
             <div class="legend muted">
               <template v-if="isLearning">
                 <span><i class="dot correct" /> to'g'ri</span>
@@ -264,6 +366,13 @@ async function finish() {
   align-items: center;
   gap: 16px;
 }
+.countdown {
+  font-size: 18px;
+  font-weight: 650;
+}
+.countdown.low {
+  color: #d03050;
+}
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
@@ -282,6 +391,50 @@ async function finish() {
     position: static;
     order: -1;
   }
+}
+.sections {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.section-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(127, 127, 127, 0.25);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.section-tab.active {
+  border-color: #0d9488;
+  background: rgba(13, 148, 136, 0.1);
+}
+.section-name {
+  font-weight: 600;
+}
+.section-title {
+  font-size: 13px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0d9488;
+  margin-bottom: 8px;
+}
+.nav-section {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0 8px;
+}
+.nav-grid + .nav-section {
+  margin-top: 14px;
 }
 .progress-row {
   display: flex;

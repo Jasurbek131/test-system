@@ -3,6 +3,8 @@ package uz.testsystem.test;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import uz.testsystem.subject.SubjectGroupService;
+
 import java.util.*;
 import java.util.stream.LongStream;
 
@@ -87,5 +89,29 @@ class QuestionPickerTest {
         assertThat(TestService.percent(2, 3)).isEqualTo(66.7);
         assertThat(TestService.percent(0, 0)).isEqualTo(0);
         assertThat(TestService.percent(5, 5)).isEqualTo(100);
+    }
+
+    @RepeatedTest(10)
+    void allocatesEvenlyAcrossGradesAndBackfills() {
+        Map<String, Integer> available = new LinkedHashMap<>();
+        available.put("1-sinf", 100);
+        available.put("2-sinf", 100);
+        assertThat(QuestionPicker.allocate(available, 30, new Random())).containsEntry("1-sinf", 15).containsEntry("2-sinf", 15);
+
+        // bitta sinfda savol kam bo'lsa, qolgani boshqasidan olinadi
+        available.put("2-sinf", 4);
+        assertThat(QuestionPicker.allocate(available, 30, new Random())).containsEntry("1-sinf", 26).containsEntry("2-sinf", 4);
+
+        Map<String, Integer> odd = QuestionPicker.allocate(Map.of("a", 10, "b", 10), 7, new Random());
+        assertThat(odd.values()).containsExactlyInAnyOrder(3, 4);
+        assertThatThrownBy(() -> QuestionPicker.allocate(Map.of("a", 1), 2, new Random()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void defaultGroupNameStripsGrade() {
+        assertThat(SubjectGroupService.defaultGroupName("1-sinf Matematika")).isEqualTo("Matematika");
+        assertThat(SubjectGroupService.defaultGroupName("11 - SINF  Biologiya")).isEqualTo("Biologiya");
+        assertThat(SubjectGroupService.defaultGroupName("Karra")).isEqualTo("Karra");
     }
 }

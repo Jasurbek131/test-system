@@ -49,8 +49,16 @@ public class StatsService {
                 params);
 
         Map<Long, Long> testsBySubject = new HashMap<>();
-        jdbc.query("select subject_id, count(*) as c from test_sessions where user_id = :userId group by subject_id",
-                params, rs -> {
+        // Oddiy testda fan test_sessions.subject_id da, blok testda – test_session_subjects da
+        jdbc.query("""
+                select subject_id, count(*) as c from (
+                    select subject_id from test_sessions where user_id = :userId and subject_id is not null
+                    union all
+                    select tss.subject_id from test_session_subjects tss
+                    join test_sessions s on s.id = tss.session_id
+                    where s.user_id = :userId
+                ) x group by subject_id
+                """, params, rs -> {
                     testsBySubject.put(rs.getLong("subject_id"), rs.getLong("c"));
                 });
 

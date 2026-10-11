@@ -1,10 +1,16 @@
 import type { Difficulty } from '@/types'
-import { db } from './db'
+import { db, defaultGroupName } from './db'
 
 interface SeedOption { text: string; correct: boolean }
 interface SeedQuestion { text: string; explanation?: string | null; difficulty?: Difficulty | null; options: SeedOption[] }
 interface SeedTopic { name: string; description?: string | null; questions?: SeedQuestion[] }
-export interface SeedFile { subject: string; subjectDescription?: string | null; topics: SeedTopic[] }
+export interface SeedFile {
+  subject: string
+  subjectDescription?: string | null
+  group?: string | null
+  scoreWeight?: number | null
+  topics: SeedTopic[]
+}
 
 // Fanlar backend bilan bir xil manbadan olinadi (backend/src/main/resources/seed/*.json) va ilovaga qo'shib yig'iladi.
 const files = import.meta.glob<SeedFile>('../../../../backend/src/main/resources/seed/*.json', { import: 'default' })
@@ -26,6 +32,8 @@ export async function importSubject(data: SeedFile): Promise<boolean> {
     const subjectId = await db.subjects.add({
       name,
       description: data.subjectDescription?.trim() || null,
+      groupName: data.group?.trim() || defaultGroupName(name),
+      scoreWeight: data.scoreWeight && data.scoreWeight > 0 ? data.scoreWeight : 1,
       createdAt: new Date().toISOString(),
     } as never)
     let order = 1

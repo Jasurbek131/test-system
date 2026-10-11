@@ -6,7 +6,7 @@ import { ChevronForward, PlayCircle, TrashOutline } from '@vicons/ionicons5'
 import { testApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import type { SessionSummary } from '@/types'
-import { formatDate, modeLabel, topicSummary } from '@/utils/format'
+import { formatDate, formatScore, modeLabel, topicSummary } from '@/utils/format'
 import GradeMark from '@m/components/GradeMark.vue'
 import { grade } from '@m/utils/grade'
 
@@ -68,10 +68,13 @@ const open = (s: SessionSummary) => router.push(s.status === 'FINISHED' ? `/test
         <GradeMark v-if="s.status === 'FINISHED'" :grade="grade(s.scorePercent ?? 0)" :size="48" />
         <div v-else class="progress-icon"><NIcon :component="PlayCircle" size="30" /></div>
         <div class="text">
-          <div class="title">{{ s.subjectName }}</div>
-          <div class="muted small">{{ topicSummary(s.topicNames.map((n) => n.replace(/^\d+\.\s*/, ''))) }}</div>
+          <div class="title">{{ s.mode === 'BLOCK' ? 'Blok test' : s.subjectName }}</div>
+          <div class="muted small">
+            {{ s.mode === 'BLOCK' ? s.groupLabels.join(', ') : topicSummary(s.topicNames.map((n) => n.replace(/^\d+\.\s*/, ''))) }}
+          </div>
           <div class="muted small tabular">
-            <template v-if="s.status === 'FINISHED'">{{ s.correctCount }}/{{ s.questionCount }} to'g'ri · </template>
+            <template v-if="s.status === 'FINISHED' && s.mode === 'BLOCK'">{{ formatScore(s.score) }}/{{ formatScore(s.maxScore) }} ball · </template>
+            <template v-else-if="s.status === 'FINISHED'">{{ s.correctCount }}/{{ s.questionCount }} to'g'ri · </template>
             <template v-else>Davom etmoqda · {{ s.answeredCount }}/{{ s.questionCount }} · </template>
             {{ modeLabel[s.mode] }} · {{ formatDate(s.startedAt).slice(0, 5) }}
           </div>

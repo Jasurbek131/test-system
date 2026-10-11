@@ -71,6 +71,19 @@ Batafsil: [mobile/README.md](mobile/README.md). Veb-versiyaga ta'sir qilmaydi.
 - **Xatolarni qayta yechish:** xato va javobsiz savollardan yangi test
 - Tarix (davom ettirish yoki natijani ko'rish) va shaxsiy statistika
 
+**Blok test** (`/block/new`) – davlat imtihonlari (DTM) uslubida
+- Bir nechta fan tanlanadi, har biri uchun savollar soni kiritiladi (standart 30 ta)
+- Bir fanning sinflari blok testda bitta fan bo'lib chiqadi: masalan «1-sinf Matematika» va «2-sinf Matematika» –
+  «Matematika». Kerakli sinflar belgilanadi (faqat 1-sinf, faqat 2-sinf yoki ikkalasi), savollar soni, ball va vaqt
+  Matematika uchun umumiy. Savollar tanlangan sinflar orasida teng taqsimlanadi. O'rganish rejimida sinflar alohida fan
+- Savollar mavzular bo'yicha teng olinadi. Har bir fan alohida bo'limda turadi (avval Matematika, keyin Biologiya), bo'lim ichida savollar aralash.
+  Test paytida fanlar paneli har bir bo'limda nechta savolga javob berilganini ko'rsatadi, bosilsa shu bo'limga o'tadi
+- Imtihon rejimidagidek: natija va izohlar faqat oxirida, yakunlaguncha javobni o'zgartirish mumkin
+- Vaqt: har bir fanga 1 soat (2 fan – 2 soat). Ekranda teskari sanoq, vaqt tugaganda test avtomatik yakunlanadi
+- Ball = to'g'ri javoblar × fanning «1 savol balli». Natijada fanlar bo'yicha ball va jami ball ko'rsatiladi
+- Standart ballar: biologiya 3.1, matematika 1.1, qolganlari 1.0. Admin panelda (Fanlar → Tahrirlash) o'zgartiriladi
+- Fan guruhi nomidan avtomatik olinadi («6-sinf Biologiya» → «Biologiya»), admin panelda boshqasini tanlash mumkin
+
 **Admin** (`/admin`)
 - Fanlar, mavzular, savollar CRUD (o'chirish = nofaol qilish)
 - Savollar: fan, mavzu, qiyinlik, holat bo'yicha filtr, qidiruv, sahifalash
@@ -82,6 +95,8 @@ Batafsil: [mobile/README.md](mobile/README.md). Veb-versiyaga ta'sir qilmaydi.
 {
   "subject": "Fizika",
   "subjectDescription": "ixtiyoriy",
+  "group": "ixtiyoriy, blok test guruhi",
+  "scoreWeight": 3.1,
   "topics": [
     {
       "name": "Kinematika",
@@ -105,6 +120,8 @@ Batafsil: [mobile/README.md](mobile/README.md). Veb-versiyaga ta'sir qilmaydi.
 - Fan va mavzular nomi bo'yicha qidiriladi (katta-kichik harf farqlanmaydi), topilmasa yaratiladi.
 - Har bir savolda 2–6 ta variant bo'ladi va ulardan aynan bittasida `"correct": true` turadi. Variant matnlari takrorlanmasligi kerak.
 - `difficulty`: `EASY` | `MEDIUM` | `HARD` (standart `MEDIUM`).
+- `group` – ixtiyoriy, blok test guruhi. Berilmasa fan nomidan olinadi: «2-sinf Matematika» → «Matematika».
+- `scoreWeight` – ixtiyoriy, guruhning 1 savol balli (standart 1.0). Faqat guruh yangi yaratilganda qo'llanadi, shuning uchun yangi sinf qo'shishda (masalan «2-sinf Matematika») uni ko'rsatish shart emas.
 - Xato savollar o'tkazib yuboriladi, qolganlari import qilinadi. Hisobotda xato savolning yo'li ko'rsatiladi (`topics[0].questions[3]`).
 
 To'liq namuna: `backend/src/main/resources/seed/5-sinf-biologiya.json`.
@@ -131,6 +148,7 @@ Yangi fan (masalan, 6-sinf Biologiya) qo'shishning ikki yo'li bor:
 | GET | `/api/auth/me` | joriy foydalanuvchi |
 | GET | `/api/subjects`, `/api/subjects/{id}/topics` | faol fanlar va mavzular (savollar soni bilan) |
 | POST | `/api/tests` | `{subjectId, topicIds[], questionCount, mode}` |
+| POST | `/api/tests/block` | blok test: `{groups: [{groupId, subjectIds[], questionCount}]}` |
 | GET | `/api/tests/{id}` | sessiya (to'g'ri javobsiz) |
 | POST | `/api/tests/{id}/answers` | `{sessionQuestionId, optionId}` |
 | POST | `/api/tests/{id}/finish` | yakunlash, natija qaytadi |
@@ -152,6 +170,8 @@ Xatolar har doim bir xil formatda qaytadi: `{timestamp, status, message, errors[
 - **Javobsiz savollar** ball hisoblashda xato hisoblanadi, lekin natijada alohida ko'rsatiladi.
 - **Statistikaga** yakunlangan testlar va o'rganish rejimidagi javoblar kiradi. Davom etayotgan imtihondagi javoblar kirmaydi, aks holda statistikaga qarab to'g'ri javobni bilib olish mumkin bo'lardi.
 - **Fanlar** SQL migratsiya bilan emas, import formatidagi seed JSON fayllar orqali yuklanadi. Flyway faqat sxemani boshqaradi. Integration testlar alohida test ma'lumotlaridan foydalanadi (`src/test/resources/demo/`).
+- **Blok test** `mode = BLOCK` bo'lgan oddiy sessiya: `test_sessions.subject_id` bo'sh, fan guruhlari `test_session_groups` da (savollar soni va ball), tanlangan sinflar `test_session_subjects` da. Ball fan guruhida (`subject_groups`) saqlanadi va test boshlangan paytdagi qiymati bilan sessiyaga yoziladi, shuning uchun admin ballni keyin o'zgartirsa ham eski natijalar o'zgarmaydi. Yakunlanganda `score`, `max_score` saqlanadi, `score_percent` esa ballning maksimal ballga nisbati bo'ladi.
+- **Blok test vaqti** server tomonida tekshiriladi (`time_limit_seconds`): muddat o'tgach javob qabul qilinmaydi, test esa sessiya, natija, tarix yoki statistika so'ralganda avtomatik yakunlanadi (yakunlash vaqti = muddat). Shuning uchun sahifani yopib qo'yish yoki yangilash vaqtni to'xtatmaydi. Frontend serverdan kelgan `remainingSeconds` bo'yicha sanaydi, kompyuter soati noto'g'ri bo'lsa ham vaqt to'g'ri ketadi.
 - **Bitta testda ko'pi bilan 500 ta savol** bo'lishi mumkin. Frontend ham shu chegarani ko'rsatadi.
 - **MapStruct** ishlatilmadi: DTO'lar `record` va kichik `from()` metodlari bilan yozildi, xaritalash oddiy bo'lgani uchun bu yetarli.
 - **Excel import** hozircha yo'q (ixtiyoriy edi), faqat JSON.

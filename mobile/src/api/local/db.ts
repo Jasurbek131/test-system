@@ -5,6 +5,10 @@ export interface DbSubject {
   id: number
   name: string
   description: string | null
+  /** Blok test guruhi: "1-sinf Matematika" -> "Matematika" (seed fayldagi group yoki nomidan) */
+  groupName?: string
+  /** Guruhning 1 savol balli (seed fayldagi scoreWeight); guruhda eng kattasi olinadi */
+  scoreWeight?: number
   createdAt: string
 }
 
@@ -33,9 +37,19 @@ export interface DbOption {
   orderIndex: number
 }
 
+/** Blok testdagi fan guruhi: tanlangan sinflar, umumiy savollar soni va test boshlangan paytdagi ball */
+export interface DbSessionGroup {
+  groupId: number
+  groupName: string
+  subjectIds: number[]
+  questionCount: number
+  scoreWeight: number
+}
+
 export interface DbSession {
   id: number
-  subjectId: number
+  /** Blok testda null, fanlar – groups da */
+  subjectId: number | null
   mode: TestMode
   status: TestStatus
   questionCount: number
@@ -44,6 +58,11 @@ export interface DbSession {
   finishedAt: string | null
   correctCount: number | null
   scorePercent: number | null
+  groups?: DbSessionGroup[]
+  score?: number | null
+  maxScore?: number | null
+  /** Vaqt chegarasi (blok testda har bir fanga 1 soat) */
+  timeLimitSeconds?: number | null
 }
 
 export interface DbSessionQuestion {
@@ -76,7 +95,22 @@ export class AppDb extends Dexie {
       sessions: '++id, subjectId',
       sessionQuestions: '++id, sessionId, questionId',
     })
+    // Blok test: o'rnatilgan ilovadagi fanlarga guruh va standart ball (backenddagi V2, V4 migratsiyalar kabi)
+    this.version(2).upgrade((tx) =>
+      tx
+        .table('subjects')
+        .toCollection()
+        .modify((s: DbSubject) => {
+          s.groupName ??= defaultGroupName(s.name)
+          s.scoreWeight ??= /biologiya/i.test(s.name) ? 3.1 : /matematika/i.test(s.name) ? 1.1 : 1
+        }),
+    )
   }
+}
+
+/** Fan nomidan standart guruh nomi: "1-sinf Matematika" -> "Matematika" (backenddagi qoida bilan bir xil). */
+export function defaultGroupName(subjectName: string): string {
+  return subjectName.trim().replace(/^\s*\d+\s*-\s*sinf\s+/i, '').trim() || subjectName.trim()
 }
 
 export let db = new AppDb()

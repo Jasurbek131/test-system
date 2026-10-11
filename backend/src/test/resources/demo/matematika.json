@@ -1,5 +1,6 @@
 {
   "subject": "Matematika",
+  "scoreWeight": 1.1,
   "subjectDescription": "Arifmetika, algebra va geometriya asoslari",
   "topics": [
     {
