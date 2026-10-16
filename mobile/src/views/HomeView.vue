@@ -117,10 +117,7 @@ onMounted(async () => {
         <button v-for="g in groups" :key="g.id" class="subject card" @click="openGroup(g)">
           <SubjectBadge :id="g.subjects[0].id" :name="g.name" />
           <div class="subject-text">
-            <div class="subject-name">
-              {{ g.name }}
-              <span v-for="s in g.subjects" v-show="gradeLabel(s.name)" :key="s.id" class="grade-chip">{{ gradeLabel(s.name) }}</span>
-            </div>
+            <div class="subject-name">{{ g.name }}</div>
             <div class="muted small tabular">
               {{ g.subjects.length > 1 ? `${g.subjects.length} sinf · ` : '' }}{{ g.questionCount }} savol
             </div>
@@ -212,14 +209,6 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-.grade-chip {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--grid);
-  color: var(--ink);
 }
 .block-entry {
   margin-top: 14px;
