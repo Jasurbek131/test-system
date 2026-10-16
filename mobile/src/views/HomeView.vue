@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { NIcon } from 'naive-ui'
-import { ChevronForward, Moon, PlayCircle, School, Sunny } from '@vicons/ionicons5'
+import { ChevronBack, ChevronForward, Moon, PlayCircle, School, Sunny } from '@vicons/ionicons5'
 import { subjectApi, testApi } from '@/api'
 import type { SessionSummary, Subject } from '@/types'
 import { useThemeStore } from '@/stores/theme'
@@ -10,6 +10,7 @@ import SubjectBadge from '@m/components/SubjectBadge.vue'
 import { gradeLabel } from '@m/utils/grade'
 
 const router = useRouter()
+const route = useRoute()
 const theme = useThemeStore()
 const subjects = ref<Subject[]>([])
 const unfinished = ref<SessionSummary | null>(null)
@@ -21,6 +22,36 @@ const greeting = computed(() => {
   if (h < 18) return 'Xayrli kun!'
   return 'Xayrli kech!'
 })
+
+interface Group {
+  id: number
+  name: string
+  subjects: Subject[]
+  questionCount: number
+}
+
+const gradeOf = (s: Subject) => Number(s.name.match(/^(\d+)-sinf/i)?.[1] ?? 0)
+
+// Fanlar guruhlarga (masalan, «Matematika» – 1-sinf, 2-sinf) birlashtiriladi, ichida sinf bo'yicha tartiblanadi
+const groups = computed<Group[]>(() => {
+  const map = new Map<number, Group>()
+  for (const s of subjects.value) {
+    let g = map.get(s.groupId)
+    if (!g) map.set(s.groupId, (g = { id: s.groupId, name: s.groupName, subjects: [], questionCount: 0 }))
+    g.subjects.push(s)
+    g.questionCount += s.questionCount
+  }
+  for (const g of map.values()) g.subjects.sort((a, b) => gradeOf(a) - gradeOf(b) || a.name.localeCompare(b.name))
+  return [...map.values()]
+})
+
+const selectedGroup = computed(() => groups.value.find((g) => String(g.id) === route.query.group) ?? null)
+
+// Guruhda bitta fan bo'lsa, sinf tanlash bosqichi o'tkazib yuboriladi
+function openGroup(g: Group) {
+  if (g.subjects.length === 1) router.push(`/subject/${g.subjects[0].id}`)
+  else router.push({ query: { group: g.id } })
+}
 
 onMounted(async () => {
   const [list, hist] = await Promise.all([subjectApi.list(), testApi.history(0, 20)])
@@ -62,21 +93,42 @@ onMounted(async () => {
       <NIcon :component="ChevronForward" size="20" class="muted" />
     </button>
 
-    <div class="section-label">Fanlar</div>
-    <div v-if="!loaded" class="skeleton card" />
-    <div class="list">
-      <button v-for="s in subjects" :key="s.id" class="subject card" @click="router.push(`/subject/${s.id}`)">
-        <SubjectBadge :id="s.id" :name="s.name" />
-        <div class="subject-text">
-          <div class="subject-name">
-            {{ s.name.replace(/^\d+-sinf\s+/i, '') }}
-            <span v-if="gradeLabel(s.name)" class="grade-chip">{{ gradeLabel(s.name) }}</span>
-          </div>
-          <div class="muted small tabular">{{ s.topicCount }} mavzu · {{ s.questionCount }} savol</div>
-        </div>
-        <NIcon :component="ChevronForward" size="20" class="muted" />
+    <template v-if="selectedGroup">
+      <button class="back-link" @click="router.back()">
+        <NIcon :component="ChevronBack" size="18" /> Barcha fanlar
       </button>
-    </div>
+      <div class="section-label">{{ selectedGroup.name }} · sinfni tanlang</div>
+      <div class="list">
+        <button v-for="s in selectedGroup.subjects" :key="s.id" class="subject card" @click="router.push(`/subject/${s.id}`)">
+          <SubjectBadge :id="s.id" :name="s.name" />
+          <div class="subject-text">
+            <div class="subject-name">{{ gradeLabel(s.name) || s.name }}</div>
+            <div class="muted small tabular">{{ s.topicCount }} mavzu · {{ s.questionCount }} savol</div>
+          </div>
+          <NIcon :component="ChevronForward" size="20" class="muted" />
+        </button>
+      </div>
+    </template>
+
+    <template v-else>
+      <div class="section-label">Fanlar</div>
+      <div v-if="!loaded" class="skeleton card" />
+      <div class="list">
+        <button v-for="g in groups" :key="g.id" class="subject card" @click="openGroup(g)">
+          <SubjectBadge :id="g.subjects[0].id" :name="g.name" />
+          <div class="subject-text">
+            <div class="subject-name">
+              {{ g.name }}
+              <span v-for="s in g.subjects" v-show="gradeLabel(s.name)" :key="s.id" class="grade-chip">{{ gradeLabel(s.name) }}</span>
+            </div>
+            <div class="muted small tabular">
+              {{ g.subjects.length > 1 ? `${g.subjects.length} sinf · ` : '' }}{{ g.questionCount }} savol
+            </div>
+          </div>
+          <NIcon :component="ChevronForward" size="20" class="muted" />
+        </button>
+      </div>
+    </template>
   </main>
 </template>
 
@@ -192,6 +244,19 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.back-link {
+  margin-top: 16px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  cursor: pointer;
 }
 .skeleton {
   height: 80px;
