@@ -13,12 +13,18 @@ export function shuffle<T>(items: readonly T[], random: () => number = Math.rand
  * shuning uchun savollar mavzular bo'yicha teng taqsimlanadi; biror mavzuda savol tugasa,
  * qolgani boshqa mavzulardan to'ldiriladi. Natija yana aralashtiriladi.
  */
-export function pickQuestions(idsByTopic: Map<number, number[]>, count: number, random: () => number = Math.random): number[] {
+/** priority – mavzu ichida qaysi savollar oldin olinadi (kichigi oldin, tenglari tasodifiy), backenddagi kabi */
+export function pickQuestions(
+  idsByTopic: Map<number, number[]>,
+  count: number,
+  random: () => number = Math.random,
+  priority: (id: number) => number = () => 0,
+): number[] {
   const available = [...idsByTopic.values()].reduce((s, ids) => s + ids.length, 0)
   if (count < 1 || count > available) throw new Error(`count must be between 1 and ${available}`)
 
   const pools = shuffle(
-    [...idsByTopic.values()].filter((ids) => ids.length > 0).map((ids) => shuffle(ids, random)),
+    [...idsByTopic.values()].filter((ids) => ids.length > 0).map((ids) => shuffle(ids, random).sort((a, b) => priority(a) - priority(b))),
     random,
   )
   const result: number[] = []

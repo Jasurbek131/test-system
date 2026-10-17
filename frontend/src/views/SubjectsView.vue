@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NButton, NCard, NEmpty, NGrid, NGridItem, NSkeleton, NTag, useMessage } from 'naive-ui'
-import { subjectApi } from '@/api'
+import { NButton, NCard, NEmpty, NGrid, NGridItem, NProgress, NSkeleton, NTag, useMessage } from 'naive-ui'
+import { progressApi, subjectApi, testApi } from '@/api'
 import { errorMessage } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
-import type { Subject } from '@/types'
+import type { ProgressOverview, SessionSummary, Subject } from '@/types'
+import { modeLabel } from '@/utils/format'
+import { loadLastTest } from '@/utils/learning'
+import { dailyGoal, dayStreak, levelInfo, todayActivity } from '@/utils/gamification'
 
 const router = useRouter()
 const route = useRoute()
@@ -14,7 +17,36 @@ const auth = useAuthStore()
 const subjects = ref<Subject[]>([])
 const loading = ref(true)
 
+// Tezkor boshlash: tugallanmagan test va oxirgi sozlamalar bilan yangi test
+const inProgress = ref<SessionSummary | null>(null)
+const lastTest = loadLastTest()
+const quickStarting = ref(false)
+const lastSubjectExists = computed(() => !!lastTest && subjects.value.some((s) => s.id === lastTest.subjectId))
+
+// Bugungi kun: kunlik maqsad, ketma-ket kunlar, daraja va takrorlash
+const overview = ref<ProgressOverview | null>(null)
+const today = computed(() => todayActivity(overview.value?.days ?? []))
+const streak = computed(() => dayStreak(overview.value?.days ?? []))
+const lvl = computed(() => levelInfo(overview.value?.xp ?? 0))
+const goalPercent = computed(() => Math.min(100, Math.round((today.value.answered / dailyGoal.value) * 100)))
+const dueSubjects = computed(() => (overview.value?.subjects ?? []).filter((s) => s.due > 0))
+const reviewing = ref<number | null>(null)
+
+async function startReview(subjectId: number) {
+  reviewing.value = subjectId
+  try {
+    const { id } = await testApi.createReview({ subjectId, kind: 'DUE', questionCount: 20, mode: 'LEARNING' })
+    router.push(`/test/${id}`)
+  } catch (e) {
+    message.error(errorMessage(e))
+  } finally {
+    reviewing.value = null
+  }
+}
+
 onMounted(async () => {
+  progressApi.overview().then((o) => (overview.value = o), () => {})
+  const history = testApi.history(0, 10).catch(() => null)
   try {
     subjects.value = await subjectApi.list()
   } catch (e) {
@@ -22,7 +54,35 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+  inProgress.value = (await history)?.items.find((s) => s.status === 'IN_PROGRESS') ?? null
 })
+
+async function repeatLast() {
+  if (!lastTest) return
+  quickStarting.value = true
+  try {
+    const { id } = await testApi.create({
+      subjectId: lastTest.subjectId,
+      topicIds: lastTest.topicIds,
+      questionCount: lastTest.questionCount,
+      mode: lastTest.mode,
+    })
+    router.push(`/test/${id}`)
+  } catch {
+    // Mavzu o'chirilgan yoki savollar kamaygan bo'lishi mumkin – sozlash sahifasida tuzatish imkoni
+    router.push({
+      path: '/test/new',
+      query: {
+        subjectId: lastTest.subjectId,
+        topicIds: lastTest.topicIds.join(','),
+        mode: lastTest.mode,
+        count: lastTest.questionCount,
+      },
+    })
+  } finally {
+    quickStarting.value = false
+  }
+}
 
 const start = (s: Subject) => router.push({ path: '/test/new', query: { subjectId: s.id } })
 
@@ -64,6 +124,81 @@ const openGroup = (g: Group) => {
         <h1>Fanlar</h1>
         <div class="muted">Fanni va sinfni tanlang, mavzularni belgilang va test yechib o'rganing</div>
       </div>
+    </div>
+
+    <NCard v-if="overview && !selectedGroup" class="today" size="small">
+      <div class="today-grid">
+        <div class="today-item">
+          <NProgress type="circle" :percentage="goalPercent" :stroke-width="10" status="success" style="width: 64px">
+            <span class="tabular goal-num">{{ today.answered }}</span>
+          </NProgress>
+          <div>
+            <div class="today-title">{{ goalPercent >= 100 ? '🎉 Maqsad bajarildi!' : 'Kunlik maqsad' }}</div>
+            <div class="muted small tabular">{{ today.answered }} / {{ dailyGoal }} ta savol</div>
+          </div>
+        </div>
+        <div class="today-item">
+          <span class="big-emoji" :class="{ dim: !streak.todayDone }">🔥</span>
+          <div>
+            <div class="today-title tabular">{{ streak.current }} kun ketma-ket</div>
+            <div class="muted small">
+              {{ streak.todayDone ? 'Bugun ham o\'qidingiz' : streak.current ? 'Bugun o\'qib, davom ettiring!' : 'Bugundan boshlang' }}
+            </div>
+          </div>
+        </div>
+        <div class="today-item level" @click="router.push('/achievements')">
+          <span class="level-badge tabular">{{ lvl.level }}</span>
+          <div class="level-body">
+            <div class="today-title">{{ lvl.title }}</div>
+            <NProgress type="line" :percentage="lvl.percent" :show-indicator="false" :height="6" />
+            <div class="muted small tabular">{{ lvl.current }} / {{ lvl.needed }} XP</div>
+          </div>
+        </div>
+      </div>
+      <div v-if="dueSubjects.length" class="due-row">
+        <span class="due-label">🔁 Takrorlash vaqti keldi:</span>
+        <NButton
+          v-for="s in dueSubjects"
+          :key="s.subjectId"
+          size="small"
+          secondary
+          type="primary"
+          :loading="reviewing === s.subjectId"
+          @click="startReview(s.subjectId)"
+        >
+          {{ s.subjectName }} · {{ s.due }}
+        </NButton>
+        <NButton v-if="overview.mistakesCount" size="small" quaternary @click="router.push('/mistakes')">
+          Xatolar daftari ({{ overview.mistakesCount }})
+        </NButton>
+      </div>
+    </NCard>
+
+    <div v-if="!selectedGroup && (inProgress || (lastTest && lastSubjectExists))" class="quick">
+      <NCard v-if="inProgress" size="small" class="quick-card continue" @click="router.push(`/test/${inProgress.id}`)">
+        <div class="quick-body">
+          <div class="quick-text">
+            <div class="quick-title">Davom ettirish</div>
+            <div class="muted quick-sub">
+              {{ inProgress.mode === 'BLOCK' ? 'Blok test' : inProgress.subjectName }} · {{ modeLabel[inProgress.mode] }} ·
+              <span class="tabular">{{ inProgress.answeredCount }} / {{ inProgress.questionCount }}</span>
+            </div>
+          </div>
+          <NButton type="primary" @click.stop="router.push(`/test/${inProgress.id}`)">Davom etish →</NButton>
+        </div>
+      </NCard>
+      <NCard v-if="lastTest && lastSubjectExists" size="small" class="quick-card" @click="repeatLast">
+        <div class="quick-body">
+          <div class="quick-text">
+            <div class="quick-title">Yana bir test</div>
+            <div class="muted quick-sub">
+              {{ lastTest.subjectName }} · {{ modeLabel[lastTest.mode] }} ·
+              <span class="tabular">{{ lastTest.questionCount }} ta savol, {{ lastTest.topicIds.length }} ta mavzu</span>
+            </div>
+          </div>
+          <NButton secondary type="primary" :loading="quickStarting" @click.stop="repeatLast">Boshlash</NButton>
+        </div>
+      </NCard>
     </div>
 
     <NCard v-if="!loading && subjects.length > 1" class="block-banner" @click="router.push('/block/new')">
@@ -133,6 +268,110 @@ const openGroup = (g: Group) => {
 </template>
 
 <style scoped>
+.today {
+  margin-bottom: 16px;
+}
+.today-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.today-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.today-item.level {
+  cursor: pointer;
+}
+.today-title {
+  font-weight: 600;
+}
+.small {
+  font-size: 13px;
+}
+.goal-num {
+  font-weight: 650;
+  font-size: 16px;
+}
+.big-emoji {
+  font-size: 40px;
+  line-height: 1;
+  width: 64px;
+  text-align: center;
+}
+.big-emoji.dim {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.level-badge {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  margin: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #0d9488, #6366f1);
+}
+.level-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.due-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(127, 127, 127, 0.15);
+}
+.due-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+.quick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.quick-card {
+  cursor: pointer;
+}
+.quick-card.continue {
+  border-color: rgba(13, 148, 136, 0.5);
+  background: rgba(13, 148, 136, 0.06);
+}
+.quick-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.quick-text {
+  flex: 1;
+  min-width: 0;
+}
+.quick-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+.quick-sub {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .block-banner {
   cursor: pointer;
   margin-bottom: 16px;

@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
-// Bosh, Tarix, Statistika – pastki menyu bilan; fan sozlamasi, test va natija – to'liq ekran.
+// Bosh, Tarix, Statistika, Yutuqlar – pastki menyu bilan; fan sozlamasi, test va natija – to'liq ekran.
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
@@ -11,9 +11,11 @@ const router = createRouter({
         { path: '', name: 'home', component: () => import('@m/views/HomeView.vue') },
         { path: 'history', component: () => import('@m/views/HistoryView.vue') },
         { path: 'stats', component: () => import('@m/views/StatsView.vue') },
+        { path: 'achievements', component: () => import('@m/views/AchievementsView.vue') },
       ],
     },
     { path: '/block', component: () => import('@m/views/BlockView.vue') },
+    { path: '/mistakes', component: () => import('@m/views/MistakesView.vue') },
     { path: '/subject/:id', component: () => import('@m/views/SubjectView.vue') },
     { path: '/test/:id', component: () => import('@m/views/TestView.vue') },
     { path: '/test/:id/result', component: () => import('@m/views/ResultView.vue') },

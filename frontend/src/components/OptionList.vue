@@ -13,6 +13,8 @@ const props = defineProps<{
   selectedId: number | null
   correctId: number | null
   disabled?: boolean
+  /** Javob hozirgina ochildi – to'g'ri variant "sakraydi", xato variant "silkinadi" */
+  animate?: boolean
 }>()
 const emit = defineEmits<{ select: [id: number] }>()
 
@@ -35,7 +37,7 @@ function state(id: number): 'correct' | 'wrong' | 'selected' | '' {
       role="radio"
       :aria-checked="o.id === selectedId"
       class="option"
-      :class="[state(o.id), { disabled }]"
+      :class="[state(o.id), { disabled, animate }]"
       :disabled="disabled"
       @click="emit('select', o.id)"
     >
@@ -91,6 +93,33 @@ function state(id: number): 'correct' | 'wrong' | 'selected' | '' {
 .option.wrong {
   border-color: var(--wrong-border);
   background: var(--wrong-bg);
+}
+.animate.correct {
+  animation: option-pop 0.4s ease-out;
+}
+.animate.wrong {
+  animation: option-shake 0.4s ease-in-out;
+}
+@keyframes option-pop {
+  40% {
+    transform: scale(1.025);
+  }
+}
+@keyframes option-shake {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate.correct,
+  .animate.wrong {
+    animation: none;
+  }
 }
 .letter {
   flex: none;

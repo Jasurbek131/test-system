@@ -30,6 +30,12 @@ const router = createRouter({
         { path: 'history', component: () => import('@/views/HistoryView.vue'), meta: { title: 'Tarix' } },
         { path: 'stats', component: () => import('@/views/StatsView.vue'), meta: { title: 'Statistika' } },
         {
+          path: 'achievements',
+          component: () => import('@/views/AchievementsView.vue'),
+          meta: { title: 'Yutuqlar' },
+        },
+        { path: 'mistakes', component: () => import('@/views/MistakesView.vue'), meta: { title: 'Xatolar daftari' } },
+        {
           path: 'admin',
           meta: { admin: true },
           children: [

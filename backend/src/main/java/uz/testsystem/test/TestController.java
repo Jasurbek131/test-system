@@ -29,6 +29,13 @@ public class TestController {
         return testService.createBlock(user.id(), req);
     }
 
+    @PostMapping("/review")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CreatedResponse createReview(@AuthenticationPrincipal AuthUser user,
+                                        @Valid @RequestBody CreateReviewRequest req) {
+        return testService.createReview(user.id(), req);
+    }
+
     @GetMapping("/history")
     public PageResponse<SessionSummary> history(@AuthenticationPrincipal AuthUser user,
                                                 @RequestParam(defaultValue = "0") int page,

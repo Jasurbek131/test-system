@@ -1,6 +1,7 @@
 export type Role = 'ADMIN' | 'USER'
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD'
-export type TestMode = 'LEARNING' | 'EXAM' | 'BLOCK'
+/** FLASHCARD – kartochkalar (o'zini baholash), BLITZ – 60 soniyalik tezkor raund */
+export type TestMode = 'LEARNING' | 'EXAM' | 'BLOCK' | 'FLASHCARD' | 'BLITZ'
 export type TestStatus = 'IN_PROGRESS' | 'FINISHED'
 
 export interface User {
@@ -163,6 +164,8 @@ export interface ResultView {
   byGroup: GroupResult[]
   byTopic: TopicResult[]
   questions: QuestionView[]
+  /** Shu testda olingan XP (bir savol 24 soatda bir marta XP beradi) */
+  xp: number
 }
 
 export interface SessionSummary {
@@ -201,6 +204,100 @@ export interface MyStats {
     correct: number
     percent: number
   }[]
+}
+
+// ---------- progress ----------
+export type MasteryLevel = 'NEW' | 'LEARNING' | 'MASTERED'
+/** DUE – takrorlash vaqti kelgan savollar, MISTAKES – xatolar daftari */
+export type ReviewKind = 'DUE' | 'MISTAKES'
+
+/** Bir kunlik faollik; date – foydalanuvchi vaqt mintaqasida "2026-10-17" */
+export interface DayActivity {
+  date: string
+  answered: number
+  correct: number
+  xp: number
+}
+
+export interface ProgressTotals {
+  /** answered/correct – kartochkalarsiz */
+  answered: number
+  correct: number
+  finishedTests: number
+  perfectTests: number
+  blitzBest: number
+  flashcards: number
+  bestBlockPercent: number
+  masteredTopics: number
+  masteredSubjects: string[]
+}
+
+export interface SubjectDue {
+  subjectId: number
+  subjectName: string
+  due: number
+  mistakes: number
+  masteredTopics: number
+  topicCount: number
+}
+
+export interface ProgressOverview {
+  xp: number
+  xpWeek: number
+  days: DayActivity[]
+  totals: ProgressTotals
+  dueCount: number
+  mistakesCount: number
+  subjects: SubjectDue[]
+}
+
+export interface TopicProgress {
+  topicId: number
+  topicName: string
+  total: number
+  seen: number
+  answered: number
+  recentAnswered: number
+  recentCorrect: number
+  due: number
+  mistakes: number
+  level: MasteryLevel
+}
+
+export interface SubjectProgress {
+  subjectId: number
+  subjectName: string
+  due: number
+  mistakes: number
+  topics: TopicProgress[]
+}
+
+export interface MistakeItem {
+  questionId: number
+  subjectId: number
+  subjectName: string
+  topicId: number
+  topicName: string
+  text: string
+  explanation: string | null
+  correctAnswer: string | null
+  /** Kartochkada (o'zi baholagan) – null */
+  yourAnswer: string | null
+  wrongCount: number
+  lastAnsweredAt: string
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  userId: number
+  fullName: string
+  xp: number
+  me: boolean
+}
+
+export interface Leaderboard {
+  items: LeaderboardEntry[]
+  me: LeaderboardEntry | null
 }
 
 // ---------- admin ----------

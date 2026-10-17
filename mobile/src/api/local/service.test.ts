@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { AppDb, useDb } from './db'
+import { AppDb, db, useDb } from './db'
 import { pickQuestions, percent } from './picker'
 import { importSubject, type SeedFile } from './seed'
 import * as svc from './service'
@@ -145,7 +145,6 @@ describe('test oqimi', () => {
     expect(session.questions.every((q) => q.correctOptionId === null)).toBe(true)
 
     // Fan C dan 3 ta to'g'ri, Fan A dan 1 ta to'g'ri, qolganlari javobsiz
-    const db = (await import('./db')).db
     let cRight = 0
     let aRight = 0
     for (const q of session.questions) {
@@ -218,7 +217,6 @@ describe('test oqimi', () => {
     expect(session.remainingSeconds).toBeGreaterThan(7190)
     await svc.answer(id, session.questions[0].id, session.questions[0].options[0].id)
 
-    const db = (await import('./db')).db
     const shift = async (sid: number, hours: number) => {
       const s = (await db.sessions.get(sid))!
       await db.sessions.update(sid, { startedAt: new Date(new Date(s.startedAt).getTime() - hours * 3600_000).toISOString() })
@@ -261,5 +259,116 @@ describe('test oqimi', () => {
     await expect(svc.createTest({ subjectId: a.s.id, topicIds: [a.topics[0].id], questionCount: 11, mode: 'LEARNING' })).rejects.toThrow('faqat 10 ta')
     await expect(svc.createTest({ subjectId: a.s.id, topicIds: b.topics.map((t) => t.id), questionCount: 1, mode: 'LEARNING' })).rejects.toBeInstanceOf(AppError)
     await expect(svc.createTest({ subjectId: a.s.id, topicIds: [], questionCount: 1, mode: 'LEARNING' })).rejects.toBeInstanceOf(AppError)
+  })
+})
+
+describe('o\'rganish vositalari', () => {
+  async function subj(name: string) {
+    const s = (await svc.listSubjects()).find((x) => x.name === name)!
+    return { s, topics: await svc.listTopics(s.id) }
+  }
+  // seed'da to'g'ri variant matni – "to'g'ri"
+  const pick = (q: { options: { id: number; text: string }[] }, correct: boolean) =>
+    q.options.find((o) => (o.text === "to'g'ri") === correct)!.id
+
+  it('kartochka: javob oldindan ochiq, o\'zini baholaydi, aniqlik statistikasiga kirmaydi', async () => {
+    const { s, topics } = await subj('Fan A')
+    const { id } = await svc.createTest({ subjectId: s.id, topicIds: topics.map((t) => t.id), questionCount: 3, mode: 'FLASHCARD' })
+    const qs = (await svc.getSession(id)).questions
+    expect(qs.every((q) => q.correctOptionId !== null && q.explanation && q.correct === null)).toBe(true)
+    await expect(svc.answer(id, qs[0].id, qs[0].options[0].id)).rejects.toBeInstanceOf(AppError)
+    expect((await svc.answer(id, qs[0].id, null, true)).correct).toBe(true)
+    expect((await svc.answer(id, qs[1].id, null, false)).correct).toBe(false)
+    await expect(svc.answer(id, qs[1].id, null, true)).rejects.toBeInstanceOf(AppError)
+    const res = await svc.finish(id)
+    expect([res.correctCount, res.wrongCount]).toEqual([1, 1])
+    expect((await svc.myStats()).totalAnswered).toBe(0)
+    const o = await svc.progressOverview()
+    expect(o.totals.flashcards).toBe(2)
+    expect(o.xp).toBe(2)
+    expect(res.xp).toBe(2)
+    expect(o.mistakesCount).toBe(1)
+  })
+
+  it('blits: 1 daqiqa, yakunda faqat javob berilgan savollar qoladi, xatolar o\'rganish rejimida', async () => {
+    const { s, topics } = await subj('Fan A')
+    const { id } = await svc.createTest({ subjectId: s.id, topicIds: topics.map((t) => t.id), questionCount: 10, mode: 'BLITZ' })
+    const session = await svc.getSession(id)
+    expect(session.timeLimitSeconds).toBe(60)
+    expect((await svc.answer(id, session.questions[0].id, pick(session.questions[0], true))).correctOptionId).not.toBeNull()
+    await svc.answer(id, session.questions[1].id, pick(session.questions[1], false))
+    await db.sessions.update(id, { startedAt: new Date(Date.now() - 120_000).toISOString() })
+    const res = await svc.result(id)
+    expect(res.questionCount).toBe(2)
+    expect(res.unansweredCount).toBe(0)
+    expect(res.durationSeconds).toBe(60)
+    expect(res.scorePercent).toBe(50)
+    const retry = await svc.getSession((await svc.retryWrong(id)).id)
+    expect(retry.mode).toBe('LEARNING')
+    expect(retry.timeLimitSeconds).toBeNull()
+    expect(retry.questionCount).toBe(1)
+  })
+
+  it('takrorlash, xatolar daftari va mavzu darajasi', async () => {
+    const { s, topics } = await subj('Fan A')
+    const { id } = await svc.createTest({ subjectId: s.id, topicIds: [topics[0].id], questionCount: 3, mode: 'LEARNING' })
+    const qs = (await svc.getSession(id)).questions
+    await svc.answer(id, qs[0].id, pick(qs[0], true))
+    await svc.answer(id, qs[1].id, pick(qs[1], false))
+    await svc.answer(id, qs[2].id, pick(qs[2], false))
+
+    let o = await svc.progressOverview()
+    expect([o.dueCount, o.mistakesCount, o.xp]).toEqual([2, 2, 1])
+    expect(o.days).toHaveLength(1)
+    expect(o.days[0].answered).toBe(3)
+
+    const p = await svc.subjectProgress(s.id)
+    expect(p.topics[0]).toMatchObject({ topicId: topics[0].id, seen: 3, mistakes: 2, level: 'LEARNING' })
+    expect(p.topics[1].level).toBe('NEW')
+
+    const m = await svc.mistakes(s.id)
+    expect(m).toHaveLength(2)
+    expect(m.every((x) => x.correctAnswer === "to'g'ri" && x.yourAnswer && x.yourAnswer !== x.correctAnswer)).toBe(true)
+
+    // davom etayotgan imtihon progressga kirmaydi
+    const exam = await svc.createTest({ subjectId: s.id, topicIds: [topics[0].id], questionCount: 5, mode: 'EXAM' })
+    for (const q of (await svc.getSession(exam.id)).questions) await svc.answer(exam.id, q.id, pick(q, false))
+    expect((await svc.progressOverview()).mistakesCount).toBe(2)
+    await db.sessions.delete(exam.id)
+
+    const review = await svc.createReview({ subjectId: s.id, kind: 'MISTAKES', questionCount: 10, mode: 'LEARNING' })
+    const rq = (await svc.getSession(review.id)).questions
+    expect(rq).toHaveLength(2)
+    for (const q of rq) await svc.answer(review.id, q.id, pick(q, true))
+    o = await svc.progressOverview()
+    expect([o.dueCount, o.mistakesCount]).toEqual([0, 0])
+    await expect(svc.createReview({ subjectId: s.id, kind: 'DUE', questionCount: 10, mode: 'LEARNING' })).rejects.toBeInstanceOf(AppError)
+
+    // 1 kundan keyin to'g'ri javob berilganlar ham takrorlashga chiqadi
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
+    await db.sessionQuestions.toCollection().modify((sq) => {
+      if (sq.answeredAt) sq.answeredAt = twoDaysAgo
+    })
+    expect((await svc.progressOverview()).dueCount).toBe(3)
+
+    // XP: bir savol 24 soatda bir marta. Javoblar 2 kun oldinga surilgan – mavzudagi 10 savol ham XP beradi
+    const full = await svc.createTest({ subjectId: s.id, topicIds: [topics[0].id], questionCount: 10, mode: 'EXAM' })
+    for (const q of (await svc.getSession(full.id)).questions) await svc.answer(full.id, q.id, pick(q, true))
+    expect((await svc.finish(full.id)).xp).toBe(10 + 15)
+    const again = await svc.createTest({ subjectId: s.id, topicIds: [topics[0].id], questionCount: 10, mode: 'EXAM' })
+    for (const q of (await svc.getSession(again.id)).questions) await svc.answer(again.id, q.id, pick(q, true))
+    expect((await svc.finish(again.id)).xp).toBe(15)
+  })
+
+  it('o\'rganishda yangi mavzu oson savollardan boshlanadi', async () => {
+    await importSubject({
+      subject: 'Fan D',
+      topics: [{ name: 'M', questions: (['HARD', 'MEDIUM', 'EASY', 'EASY', 'HARD', 'MEDIUM'] as const).map((d, i) => ({
+        text: `D ${i}`, difficulty: d, options: [{ text: "to'g'ri", correct: true }, { text: 'xato', correct: false }],
+      })) }],
+    })
+    const { s, topics } = await subj('Fan D')
+    const { id } = await svc.createTest({ subjectId: s.id, topicIds: [topics[0].id], questionCount: 4, mode: 'LEARNING' })
+    expect((await svc.getSession(id)).questions.map((q) => q.difficulty)).toEqual(['EASY', 'EASY', 'MEDIUM', 'MEDIUM'])
   })
 })

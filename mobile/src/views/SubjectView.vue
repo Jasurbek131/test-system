@@ -3,11 +3,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NIcon, useMessage } from 'naive-ui'
 import { Add, Checkmark, Remove } from '@vicons/ionicons5'
-import { subjectApi, testApi } from '@/api'
+import { progressApi, subjectApi, testApi } from '@/api'
 import { errorMessage } from '@/api/http'
-import type { Subject, TestMode, Topic } from '@/types'
+import type { ReviewKind, Subject, SubjectProgress, TestMode, Topic } from '@/types'
+import { masteryLabel } from '@/utils/format'
 import AppBar from '@m/components/AppBar.vue'
 import SubjectBadge from '@m/components/SubjectBadge.vue'
+import { saveLastTest } from '@/utils/learning'
 
 const MAX = 500
 const route = useRoute()
@@ -22,6 +24,28 @@ const selected = ref<Set<number>>(new Set())
 const count = ref(10)
 const mode = ref<TestMode>('LEARNING')
 const starting = ref(false)
+// Blitsda savollar soni so'ralmaydi: 60 soniyaga yetadigan darajada ko'p savol olinadi
+const BLITZ_COUNT = 100
+const isBlitz = computed(() => mode.value === 'BLITZ')
+
+// Mavzular bo'yicha o'zlashtirish va takrorlash
+const progress = ref<SubjectProgress | null>(null)
+const topicProgress = computed(() => new Map((progress.value?.topics ?? []).map((t) => [t.topicId, t])))
+const masteredCount = computed(() => (progress.value?.topics ?? []).filter((t) => t.level === 'MASTERED' && t.total > 0).length)
+const withQuestions = computed(() => topics.value.filter((t) => t.questionCount > 0).length)
+
+async function review(kind: ReviewKind, reviewMode: TestMode) {
+  if (starting.value) return
+  starting.value = true
+  try {
+    const { id } = await testApi.createReview({ subjectId, kind, questionCount: 20, mode: reviewMode })
+    router.replace(`/test/${id}`)
+  } catch (e) {
+    message.error(errorMessage(e))
+  } finally {
+    starting.value = false
+  }
+}
 
 const available = computed(() =>
   Math.min(MAX, topics.value.filter((t) => selected.value.has(t.id)).reduce((s, t) => s + t.questionCount, 0)),
@@ -52,7 +76,8 @@ function step(d: number) {
 
 onMounted(async () => {
   try {
-    const [s, t] = await Promise.all([subjectApi.get(subjectId), subjectApi.topics(subjectId)])
+    const [s, t, p] = await Promise.all([subjectApi.get(subjectId), subjectApi.topics(subjectId), progressApi.subject(subjectId)])
+    progress.value = p
     subject.value = s
     topics.value = t
     let prefs: { count?: number; mode?: TestMode; topics?: number[] } = {}
@@ -61,9 +86,12 @@ onMounted(async () => {
     } catch {
       /* sozlamalar yo'q */
     }
-    const valid = (prefs.topics ?? []).filter((id) => t.some((x) => x.id === id && x.questionCount))
+    // Natija sahifasidagi «Mashq qilish» zaif mavzularni ?topics=1,2 bilan yuboradi – o'rganish rejimida
+    const practice = String(route.query.topics ?? '').split(',').map(Number).filter((n) => n > 0)
+    const valid = (practice.length ? practice : (prefs.topics ?? [])).filter((id) => t.some((x) => x.id === id && x.questionCount))
     selected.value = new Set(valid.length ? valid : t.filter((x) => x.questionCount).map((x) => x.id))
-    if (prefs.mode) mode.value = prefs.mode
+    if (practice.length) mode.value = 'LEARNING'
+    else if (prefs.mode) mode.value = prefs.mode
     if (prefs.count) count.value = prefs.count
   } catch (e) {
     message.error(errorMessage(e))
@@ -75,13 +103,14 @@ async function start() {
   if (!selected.value.size || available.value < 1) return
   starting.value = true
   try {
-    const n = Math.min(count.value, available.value)
+    const n = Math.min(isBlitz.value ? BLITZ_COUNT : count.value, available.value)
     try {
       localStorage.setItem(prefsKey, JSON.stringify({ count: n, mode: mode.value, topics: [...selected.value] }))
     } catch {
       /* saqlab bo'lmasa ham davom etamiz */
     }
     const { id } = await testApi.create({ subjectId, topicIds: [...selected.value], questionCount: n, mode: mode.value })
+    saveLastTest({ subjectId, subjectName: subject.value?.name ?? '', topicIds: [...selected.value], questionCount: n, mode: mode.value })
     router.replace(`/test/${id}`)
   } catch (e) {
     message.error(errorMessage(e))
@@ -102,6 +131,22 @@ async function start() {
       </div>
     </div>
 
+    <div v-if="progress && (progress.due || progress.mistakes)" class="card review">
+      <div class="review-title">🔁 Takrorlash</div>
+      <div class="muted small">
+        <template v-if="progress.due">{{ progress.due }} ta savolni takrorlash vaqti keldi. </template>
+        <template v-if="progress.mistakes">Xatolar: {{ progress.mistakes }} ta.</template>
+      </div>
+      <div class="review-actions">
+        <button v-if="progress.due" class="btn btn-primary" :disabled="starting" @click="review('DUE', 'LEARNING')">Takrorlash</button>
+        <button v-if="progress.due" class="btn btn-secondary" :disabled="starting" @click="review('DUE', 'FLASHCARD')">Kartochkalar</button>
+        <button v-if="progress.mistakes" class="btn btn-secondary" :disabled="starting" @click="review('MISTAKES', 'LEARNING')">
+          Xatolarni yechish
+        </button>
+      </div>
+    </div>
+
+    <template v-if="!isBlitz">
     <div class="section-label">Savollar soni</div>
     <div class="card block">
       <div class="counter">
@@ -119,6 +164,7 @@ async function start() {
         </button>
       </div>
     </div>
+    </template>
 
     <div class="section-label">Rejim</div>
     <div class="modes">
@@ -130,10 +176,21 @@ async function start() {
         <span class="mode-title">Imtihon</span>
         <span class="mode-desc">Javoblar va baho faqat oxirida</span>
       </button>
+      <button class="mode card" :class="{ on: mode === 'FLASHCARD' }" @click="mode = 'FLASHCARD'">
+        <span class="mode-title">🃏 Kartochka</span>
+        <span class="mode-desc">Javobni eslang, aylantiring, o'zingizni baholang</span>
+      </button>
+      <button class="mode card" :class="{ on: mode === 'BLITZ' }" @click="mode = 'BLITZ'">
+        <span class="mode-title">⚡ Blits</span>
+        <span class="mode-desc">60 soniyada iloji boricha ko'p savol</span>
+      </button>
     </div>
 
     <div class="topics-head">
-      <div class="section-label" style="margin: 0">Mavzular · {{ selected.size }}/{{ topics.length }}</div>
+      <div class="section-label" style="margin: 0">
+        Mavzular · {{ selected.size }}/{{ topics.length }}
+        <span v-if="progress && masteredCount" class="mastered-note">· ✓ {{ masteredCount }}/{{ withQuestions }}</span>
+      </div>
       <button class="link" @click="toggleAll">{{ allSelected ? 'Hammasini olib tashlash' : 'Hammasini tanlash' }}</button>
     </div>
     <div class="card topics">
@@ -147,7 +204,13 @@ async function start() {
         @click="toggle(t)"
       >
         <span class="tick"><NIcon v-if="selected.has(t.id)" :component="Checkmark" size="16" /></span>
-        <span class="topic-name">{{ t.name }}</span>
+        <span class="topic-text">
+          <span class="topic-name">{{ t.name }}</span>
+          <span v-if="topicProgress.get(t.id)?.seen" class="topic-level" :class="topicProgress.get(t.id)!.level">
+            {{ topicProgress.get(t.id)!.level === 'MASTERED' ? '✓ ' : '' }}{{ masteryLabel[topicProgress.get(t.id)!.level] }}
+            · {{ topicProgress.get(t.id)!.seen }}/{{ t.questionCount }}
+          </span>
+        </span>
         <span class="topic-count tabular">{{ t.questionCount }}</span>
       </button>
     </div>
@@ -156,7 +219,9 @@ async function start() {
   <div class="bottom-bar">
     <div class="bottom-bar-inner">
       <button class="btn btn-primary btn-block" :disabled="!selected.size || available < 1 || starting" @click="start">
-        {{ selected.size ? `Boshlash · ${Math.min(count, available)} ta savol` : 'Mavzu tanlang' }}
+        <template v-if="!selected.size">Mavzu tanlang</template>
+        <template v-else-if="isBlitz">⚡ Boshlash · 60 soniya</template>
+        <template v-else>Boshlash · {{ Math.min(count, available) }} ta {{ mode === 'FLASHCARD' ? 'kartochka' : 'savol' }}</template>
       </button>
     </div>
   </div>
@@ -311,8 +376,53 @@ async function start() {
 :root[data-theme='dark'] .topic.on .tick {
   color: #0f1430;
 }
-.topic-name {
+.review {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--marker-soft);
+  box-shadow: inset 0 0 0 1.5px var(--marker);
+}
+.review-title {
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.small {
+  font-size: 13px;
+}
+.review-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.review-actions .btn {
+  min-height: 42px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+.mastered-note {
+  color: var(--ok);
+}
+.topic-text {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.topic-level {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.topic-level.LEARNING {
+  color: #c27c0e;
+}
+.topic-level.MASTERED {
+  color: var(--ok);
+}
+.topic-name {
   min-width: 0;
   font-size: 15px;
   line-height: 1.35;

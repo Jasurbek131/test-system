@@ -2,13 +2,14 @@
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { NIcon } from 'naive-ui'
-import { BarChart, BarChartOutline, Book, BookOutline, Time, TimeOutline } from '@vicons/ionicons5'
+import { BarChart, BarChartOutline, Book, BookOutline, Time, TimeOutline, Trophy, TrophyOutline } from '@vicons/ionicons5'
 
 const route = useRoute()
 const tabs = [
   { to: '/', label: 'Fanlar', icon: BookOutline, active: Book },
   { to: '/history', label: 'Tarix', icon: TimeOutline, active: Time },
   { to: '/stats', label: 'Natijalarim', icon: BarChartOutline, active: BarChart },
+  { to: '/achievements', label: 'Yutuqlar', icon: TrophyOutline, active: Trophy },
 ]
 const current = computed(() => (route.path === '/' ? '/' : '/' + route.path.split('/')[1]))
 </script>

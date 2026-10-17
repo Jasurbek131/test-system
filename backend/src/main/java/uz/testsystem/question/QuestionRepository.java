@@ -17,9 +17,9 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
             """)
     List<Object[]> countActiveByTopicIds(Collection<Long> topicIds);
 
-    /** Testga tanlash uchun: [topicId, questionId] */
+    /** Testga tanlash uchun: [topicId, questionId, difficulty] */
     @Query("""
-            select q.topic.id, q.id from Question q
+            select q.topic.id, q.id, q.difficulty from Question q
             where q.topic.id in :topicIds and q.active = true
             """)
     List<Object[]> findActiveIdsByTopicIds(Collection<Long> topicIds);

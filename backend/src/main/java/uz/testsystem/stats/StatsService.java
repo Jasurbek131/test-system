@@ -17,8 +17,9 @@ import java.util.Map;
 public class StatsService {
 
     /**
-     * Statistikaga yakunlangan testlar va o'rganish rejimidagi javoblar kiradi.
+     * Statistikaga yakunlangan testlar va javobi darhol ochiladigan rejimlardagi (o'rganish, blits) javoblar kiradi.
      * Davom etayotgan imtihon rejimidagi javoblar kirmaydi (natija oldindan ma'lum bo'lib qolmasligi uchun).
+     * Kartochkalar (o'quvchi o'zini baholaydi) aniqlik statistikasiga kirmaydi.
      */
     private static final String COUNTED_ANSWERS = """
             from session_questions sq
@@ -28,7 +29,8 @@ public class StatsService {
             join subjects sub on sub.id = t.subject_id
             where s.user_id = :userId
               and sq.selected_option_id is not null
-              and (s.status = 'FINISHED' or s.mode = 'LEARNING')
+              and (s.status = 'FINISHED' or s.mode in ('LEARNING', 'BLITZ'))
+              and s.mode <> 'FLASHCARD'
             """;
 
     private final NamedParameterJdbcTemplate jdbc;

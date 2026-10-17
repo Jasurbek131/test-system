@@ -1,4 +1,4 @@
-import type { Difficulty, TestMode } from '@/types'
+import type { Difficulty, MasteryLevel, TestMode } from '@/types'
 
 export const difficultyLabel: Record<Difficulty, string> = {
   EASY: 'Oson',
@@ -16,6 +16,24 @@ export const modeLabel: Record<TestMode, string> = {
   LEARNING: "O'rganish",
   EXAM: 'Imtihon',
   BLOCK: 'Blok test',
+  FLASHCARD: 'Kartochka',
+  BLITZ: 'Blits',
+}
+
+
+export const masteryLabel: Record<MasteryLevel, string> = {
+  NEW: 'Yangi',
+  LEARNING: "O'rganilmoqda",
+  MASTERED: "O'zlashtirildi",
+}
+
+/** "1-sinf Matematika" -> 1; sinf ko'rsatilmagan bo'lsa 0 */
+export const gradeOf = (subjectName: string) => Number(subjectName.match(/^(\d+)-sinf/i)?.[1] ?? 0)
+
+/** Kichik sinflar (1–4) uchun bolalarga mos, yirikroq va rang-barang ko'rinish */
+export const isKidsSubject = (subjectName: string) => {
+  const g = gradeOf(subjectName)
+  return g >= 1 && g <= 4
 }
 
 /** Ballni chiroyli ko'rsatish: 93 -> "93", 52.7 -> "52.7" */

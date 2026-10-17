@@ -382,6 +382,202 @@ class TestFlowIntegrationTest {
         call(get("/api/tests/" + otherSessionId), null, 200);
     }
 
+    @Test
+    void flashcardsRevealAnswerAndAreSelfGraded() throws Exception {
+        JsonNode subject = firstSubject();
+        long subjectId = subject.get("id").asLong();
+        long sessionId = call(post("/api/tests"), Map.of("subjectId", subjectId, "topicIds", topicIds(subjectId),
+                "questionCount", 3, "mode", "FLASHCARD"), 201).get("id").asLong();
+        JsonNode questions = call(get("/api/tests/" + sessionId), null, 200).get("questions");
+        // kartochkada javob va izoh oldindan ochiq, baho esa yo'q
+        for (JsonNode q : questions) {
+            assertThat(q.get("correctOptionId").asLong()).isPositive();
+            assertThat(q.get("explanation").asText()).isNotBlank();
+            assertThat(q.get("correct").isNull()).isTrue();
+        }
+        long q0 = questions.get(0).get("id").asLong();
+        long q1 = questions.get(1).get("id").asLong();
+        call(post("/api/tests/" + sessionId + "/answers"),
+                Map.of("sessionQuestionId", q0, "optionId", questions.get(0).get("options").get(0).get("id").asLong()), 400);
+        assertThat(call(post("/api/tests/" + sessionId + "/answers"),
+                Map.of("sessionQuestionId", q0, "known", true), 200).get("correct").asBoolean()).isTrue();
+        assertThat(call(post("/api/tests/" + sessionId + "/answers"),
+                Map.of("sessionQuestionId", q1, "known", false), 200).get("correct").asBoolean()).isFalse();
+        call(post("/api/tests/" + sessionId + "/answers"), Map.of("sessionQuestionId", q1, "known", true), 409);
+
+        JsonNode result = call(post("/api/tests/" + sessionId + "/finish"), null, 200);
+        assertThat(result.get("correctCount").asInt()).isEqualTo(1);
+        assertThat(result.get("wrongCount").asInt()).isEqualTo(1);
+        // o'zi baholagan javoblar aniqlik statistikasiga kirmaydi, lekin progressga kiradi
+        assertThat(call(get("/api/stats/me"), null, 200).get("totalAnswered").asLong()).isZero();
+        JsonNode overview = call(get("/api/progress/overview?tz=Asia/Tashkent"), null, 200);
+        assertThat(overview.get("totals").get("flashcards").asLong()).isEqualTo(2);
+        assertThat(overview.get("xp").asLong()).isEqualTo(2);
+        assertThat(result.get("xp").asInt()).isEqualTo(2);
+        assertThat(overview.get("mistakesCount").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    void blitzHasOneMinuteAndKeepsOnlyAnsweredQuestions() throws Exception {
+        JsonNode subject = firstSubject();
+        long subjectId = subject.get("id").asLong();
+        long sessionId = call(post("/api/tests"), Map.of("subjectId", subjectId, "topicIds", topicIds(subjectId),
+                "questionCount", 10, "mode", "BLITZ"), 201).get("id").asLong();
+        JsonNode session = call(get("/api/tests/" + sessionId), null, 200);
+        assertThat(session.get("timeLimitSeconds").asInt()).isEqualTo(60);
+        int wrong = 0;
+        for (int i = 0; i < 2; i++) {
+            JsonNode q = session.get("questions").get(i);
+            JsonNode answer = call(post("/api/tests/" + sessionId + "/answers"), Map.of(
+                    "sessionQuestionId", q.get("id").asLong(),
+                    "optionId", q.get("options").get(0).get("id").asLong()), 200);
+            // blitsda javob darhol ochiladi
+            assertThat(answer.get("correctOptionId").asLong()).isPositive();
+            wrong += answer.get("correct").asBoolean() ? 0 : 1;
+        }
+        jdbc.update("update test_sessions set started_at = started_at - interval '2 minutes' where id = ?", sessionId);
+        JsonNode result = call(get("/api/tests/" + sessionId + "/result"), null, 200);
+        assertThat(result.get("questionCount").asInt()).isEqualTo(2);
+        assertThat(result.get("unansweredCount").asInt()).isZero();
+        assertThat(result.get("questions")).hasSize(2);
+        assertThat(result.get("durationSeconds").asLong()).isEqualTo(60);
+        if (wrong > 0) {
+            long retryId = call(post("/api/tests/" + sessionId + "/retry-wrong"), null, 201).get("id").asLong();
+            JsonNode retry = call(get("/api/tests/" + retryId), null, 200);
+            assertThat(retry.get("mode").asText()).isEqualTo("LEARNING");
+            assertThat(retry.get("timeLimitSeconds").isNull()).isTrue();
+            assertThat(retry.get("questionCount").asInt()).isEqualTo(wrong);
+        }
+    }
+
+    @Test
+    void spacedRepetitionReviewAndMistakesNotebook() throws Exception {
+        JsonNode subject = firstSubject();
+        long subjectId = subject.get("id").asLong();
+        long topicId = topicIds(subjectId).getFirst();
+        long sessionId = call(post("/api/tests"), Map.of("subjectId", subjectId, "topicIds", List.of(topicId),
+                "questionCount", 3, "mode", "LEARNING"), 201).get("id").asLong();
+        JsonNode questions = call(get("/api/tests/" + sessionId), null, 200).get("questions");
+        answer(sessionId, questions.get(0), true);
+        answer(sessionId, questions.get(1), false);
+        answer(sessionId, questions.get(2), false);
+
+        // xato javoblar darhol takrorlashga chiqadi, to'g'ri javob – 1 kundan keyin
+        JsonNode overview = call(get("/api/progress/overview?tz=Asia/Tashkent"), null, 200);
+        assertThat(overview.get("dueCount").asInt()).isEqualTo(2);
+        assertThat(overview.get("mistakesCount").asInt()).isEqualTo(2);
+        assertThat(overview.get("xp").asLong()).isEqualTo(1);
+        assertThat(overview.get("days")).hasSize(1);
+        assertThat(overview.get("days").get(0).get("answered").asLong()).isEqualTo(3);
+
+        JsonNode progress = call(get("/api/progress/subjects/" + subjectId), null, 200);
+        JsonNode topic = progress.get("topics").get(0);
+        assertThat(topic.get("topicId").asLong()).isEqualTo(topicId);
+        assertThat(topic.get("seen").asInt()).isEqualTo(3);
+        assertThat(topic.get("mistakes").asInt()).isEqualTo(2);
+        assertThat(topic.get("level").asText()).isEqualTo("LEARNING");
+        assertThat(progress.get("topics").get(1).get("level").asText()).isEqualTo("NEW");
+
+        JsonNode mistakes = call(get("/api/progress/mistakes?subjectId=" + subjectId), null, 200);
+        assertThat(mistakes).hasSize(2);
+        mistakes.forEach(m -> {
+            assertThat(m.get("correctAnswer").asText()).isNotBlank();
+            assertThat(m.get("yourAnswer").asText()).isNotBlank();
+            assertThat(m.get("yourAnswer").asText()).isNotEqualTo(m.get("correctAnswer").asText());
+        });
+
+        // davom etayotgan imtihondagi javoblar progressga kirmaydi
+        long exam = call(post("/api/tests"), Map.of("subjectId", subjectId, "topicIds", List.of(topicId),
+                "questionCount", 10, "mode", "EXAM"), 201).get("id").asLong();
+        JsonNode examQs = call(get("/api/tests/" + exam), null, 200).get("questions");
+        for (JsonNode q : examQs) {
+            answer(exam, q, false);
+        }
+        assertThat(call(get("/api/progress/overview"), null, 200).get("mistakesCount").asInt()).isEqualTo(2);
+        call(delete("/api/tests/history"), null, 204);
+        assertThat(call(get("/api/progress/overview"), null, 200).get("xp").asLong()).isZero();
+
+        // tarix tozalangach qaytadan: takrorlash testi faqat vaqti kelgan savollardan
+        sessionId = call(post("/api/tests"), Map.of("subjectId", subjectId, "topicIds", List.of(topicId),
+                "questionCount", 3, "mode", "LEARNING"), 201).get("id").asLong();
+        questions = call(get("/api/tests/" + sessionId), null, 200).get("questions");
+        answer(sessionId, questions.get(0), true);
+        answer(sessionId, questions.get(1), false);
+        call(post("/api/tests/review"), Map.of("subjectId", subjectId, "kind", "DUE", "questionCount", 10), 201);
+        long review = call(post("/api/tests/review"), Map.of("subjectId", subjectId, "kind", "MISTAKES",
+                "questionCount", 10), 201).get("id").asLong();
+        JsonNode reviewQs = call(get("/api/tests/" + review), null, 200).get("questions");
+        assertThat(reviewQs).hasSize(1);
+        assertThat(reviewQs.get(0).get("text").asText()).isEqualTo(questions.get(1).get("text").asText());
+        answer(review, reviewQs.get(0), true);
+        assertThat(call(get("/api/progress/overview"), null, 200).get("dueCount").asInt()).isZero();
+        assertThat(call(post("/api/tests/" + review + "/finish"), null, 200).get("xp").asInt()).isEqualTo(1);
+        call(post("/api/tests/review"), Map.of("subjectId", subjectId, "kind", "MISTAKES", "questionCount", 10), 400);
+
+        // 1 kundan keyin to'g'ri javob berilgan savollar ham takrorlashga chiqadi
+        jdbc.update("""
+                update session_questions set answered_at = answered_at - interval '2 days'
+                where session_id in (select id from test_sessions where user_id =
+                    (select user_id from test_sessions where id = ?))""", review);
+        assertThat(call(get("/api/progress/overview"), null, 200).get("dueCount").asInt()).isEqualTo(2);
+
+        JsonNode board = call(get("/api/progress/leaderboard"), null, 200);
+        assertThat(board.get("me").get("xp").asLong()).isPositive();
+        assertThat(board.get("me").get("rank").asInt()).isPositive();
+
+        // 24 soat ichida o'sha savollarni qayta to'g'ri yechish XP bermaydi. Mavzudagi 10 savoldan 2 tasi XP olgan,
+        // lekin javoblar 2 kun oldinga surildi – endi hammasi yana XP beradi: 10 + (5 + 10) bonus
+        long full = call(post("/api/tests"), Map.of("subjectId", subjectId, "topicIds", List.of(topicId),
+                "questionCount", 10, "mode", "EXAM"), 201).get("id").asLong();
+        for (JsonNode q : call(get("/api/tests/" + full), null, 200).get("questions")) {
+            answer(full, q, true);
+        }
+        assertThat(call(post("/api/tests/" + full + "/finish"), null, 200).get("xp").asInt()).isEqualTo(10 + 15);
+        // darhol yana – endi faqat bonus
+        long repeat = call(post("/api/tests"), Map.of("subjectId", subjectId, "topicIds", List.of(topicId),
+                "questionCount", 10, "mode", "EXAM"), 201).get("id").asLong();
+        for (JsonNode q : call(get("/api/tests/" + repeat), null, 200).get("questions")) {
+            answer(repeat, q, true);
+        }
+        assertThat(call(post("/api/tests/" + repeat + "/finish"), null, 200).get("xp").asInt()).isEqualTo(15);
+    }
+
+    @Test
+    void learningStartsWithEasyQuestions() throws Exception {
+        JsonNode subject = firstSubject();
+        long subjectId = subject.get("id").asLong();
+        long sessionId = call(post("/api/tests"), Map.of("subjectId", subjectId, "topicIds", topicIds(subjectId),
+                "questionCount", 9, "mode", "LEARNING"), 201).get("id").asLong();
+        List<String> order = new ArrayList<>();
+        call(get("/api/tests/" + sessionId), null, 200).get("questions")
+                .forEach(q -> order.add(q.get("difficulty").asText()));
+        List<String> rank = List.of("EASY", "MEDIUM", "HARD");
+        List<String> sorted = new ArrayList<>(order);
+        sorted.sort(Comparator.comparing(rank::indexOf));
+        assertThat(order).isEqualTo(sorted);
+        // yangi mavzuda oson savollar ustun: har mavzudan 3 tadan, demo ma'lumotda har mavzuda kamida 3 ta oson
+        assertThat(order).containsOnly("EASY");
+    }
+
+    /** Savolga ataylab to'g'ri yoki xato javob beradi (to'g'ri variant bazadan olinadi). */
+    private void answer(long sessionId, JsonNode q, boolean correct) throws Exception {
+        Long right = jdbc.queryForObject("""
+                select o.id from answer_options o
+                join session_questions sq on sq.question_id = o.question_id
+                where sq.id = ? and o.is_correct""", Long.class, q.get("id").asLong());
+        long optionId = right;
+        if (!correct) {
+            for (JsonNode o : q.get("options")) {
+                if (o.get("id").asLong() != right) {
+                    optionId = o.get("id").asLong();
+                    break;
+                }
+            }
+        }
+        call(post("/api/tests/" + sessionId + "/answers"),
+                Map.of("sessionQuestionId", q.get("id").asLong(), "optionId", optionId), 200);
+    }
+
     private JsonNode firstSubject() throws Exception {
         JsonNode subjects = call(get("/api/subjects"), null, 200);
         assertThat(subjects.size()).isGreaterThanOrEqualTo(2);

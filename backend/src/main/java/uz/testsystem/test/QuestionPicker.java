@@ -3,11 +3,13 @@ package uz.testsystem.test;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.ToIntFunction;
 
 /**
  * Tanlangan mavzulardan savollarni tasodifiy tanlaydi.
@@ -51,6 +53,16 @@ public final class QuestionPicker {
     }
 
     public static List<Long> pick(Map<Long, List<Long>> questionIdsByTopic, int count, Random random) {
+        return pick(questionIdsByTopic, count, random, id -> 0);
+    }
+
+    /**
+     * {@code priority} – mavzu ichida qaysi savollar birinchi olinadi (kichigi oldin, tenglari orasida tasodifiy):
+     * masalan yangi va takrorlash vaqti kelgan savollar, o'quvchi darajasiga mos qiyinlikdagilar.
+     * Mavzular orasidagi teng taqsimot o'zgarmaydi.
+     */
+    public static List<Long> pick(Map<Long, List<Long>> questionIdsByTopic, int count, Random random,
+                                  ToIntFunction<Long> priority) {
         int available = questionIdsByTopic.values().stream().mapToInt(List::size).sum();
         if (count < 1 || count > available) {
             throw new IllegalArgumentException("count must be between 1 and " + available);
@@ -63,6 +75,7 @@ public final class QuestionPicker {
             }
             List<Long> shuffled = new ArrayList<>(ids);
             Collections.shuffle(shuffled, random);
+            shuffled.sort(Comparator.comparingInt(priority)); // barqaror: teng ustuvorlikda tasodifiy tartib qoladi
             pools.add(new ArrayDeque<>(shuffled));
         }
         // Mavzular tartibi ham tasodifiy: count mavzular soniga bo'linmasa, ortiqcha savol har safar boshqa mavzuga tushadi

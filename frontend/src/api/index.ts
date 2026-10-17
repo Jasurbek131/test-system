@@ -4,14 +4,19 @@ import type {
   AuthResponse,
   Difficulty,
   ImportReport,
+  Leaderboard,
+  MistakeItem,
   MyStats,
   Page,
+  ProgressOverview,
   QuestionAdmin,
   QuestionRequest,
   ResultView,
+  ReviewKind,
   SessionSummary,
   SessionView,
   Subject,
+  SubjectProgress,
   TestMode,
   Topic,
   User,
@@ -39,6 +44,11 @@ export const testApi = {
   get: (id: number) => data(http.get<SessionView>(`/tests/${id}`)),
   answer: (id: number, sessionQuestionId: number, optionId: number) =>
     data(http.post<AnswerResponse>(`/tests/${id}/answers`, { sessionQuestionId, optionId })),
+  /** Kartochka: «Bilardim» (true) / «Bilmasdim» (false) */
+  rate: (id: number, sessionQuestionId: number, known: boolean) =>
+    data(http.post<AnswerResponse>(`/tests/${id}/answers`, { sessionQuestionId, known })),
+  createReview: (body: { subjectId: number; kind: ReviewKind; questionCount: number; mode: TestMode }) =>
+    data(http.post<{ id: number }>('/tests/review', body)),
   finish: (id: number) => data(http.post<ResultView>(`/tests/${id}/finish`)),
   result: (id: number) => data(http.get<ResultView>(`/tests/${id}/result`)),
   createBlock: (groups: { groupId: number; subjectIds: number[]; questionCount: number }[]) =>
@@ -51,6 +61,18 @@ export const testApi = {
 
 export const statsApi = {
   me: () => data(http.get<MyStats>('/stats/me')),
+}
+
+/** Foydalanuvchi vaqt mintaqasi: kunlik faollik va streak shu bo'yicha hisoblanadi */
+const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+
+export const progressApi = {
+  overview: () => data(http.get<ProgressOverview>('/progress/overview', { params: { tz: tz() } })),
+  subject: (subjectId: number) => data(http.get<SubjectProgress>(`/progress/subjects/${subjectId}`)),
+  mistakes: (subjectId?: number | null) =>
+    data(http.get<MistakeItem[]>('/progress/mistakes', { params: subjectId ? { subjectId } : {} })),
+  /** Oxirgi 7 kunlik XP reytingi (mobil ilovada yo'q) */
+  leaderboard: () => data(http.get<Leaderboard>('/progress/leaderboard')),
 }
 
 export interface SubjectBody {

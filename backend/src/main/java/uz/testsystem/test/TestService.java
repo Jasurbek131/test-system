@@ -8,6 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.testsystem.common.ApiException;
 import uz.testsystem.common.Counts;
 import uz.testsystem.common.PageResponse;
+import uz.testsystem.progress.Leitner;
+import uz.testsystem.progress.ProgressDtos.MasteryLevel;
+import uz.testsystem.progress.ProgressService;
+import uz.testsystem.question.Difficulty;
 import uz.testsystem.question.AnswerOption;
 import uz.testsystem.question.Question;
 import uz.testsystem.question.QuestionRepository;
@@ -25,6 +29,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -38,6 +43,9 @@ public class TestService {
     /** Blok testda har bir fan (guruh) ga beriladigan vaqt (DTM'dagidek 1 soat). */
     static final int BLOCK_SECONDS_PER_SUBJECT = 3600;
 
+    /** Blits rejimi davomiyligi. */
+    static final int BLITZ_SECONDS = 60;
+
     private final Random random = new SecureRandom();
 
     private final TestSessionRepository sessionRepository;
@@ -46,6 +54,7 @@ public class TestService {
     private final UserRepository userRepository;
     private final SubjectService subjectService;
     private final SubjectGroupRepository groupRepository;
+    private final ProgressService progressService;
 
     // ---------------------------------------------------------------- yaratish
 
@@ -70,7 +79,8 @@ public class TestService {
             }
         }
 
-        Map<Long, List<Long>> idsByTopic = activeQuestionIdsByTopic(topicIds);
+        Map<Long, Difficulty> difficulty = new HashMap<>();
+        Map<Long, List<Long>> idsByTopic = activeQuestionIdsByTopic(topicIds, difficulty);
         int available = idsByTopic.values().stream().mapToInt(List::size).sum();
         if (available == 0) {
             throw ApiException.badRequest("Tanlangan mavzularda savollar yo'q");
@@ -79,10 +89,77 @@ public class TestService {
             throw ApiException.badRequest("Tanlangan mavzularda faqat " + available + " ta savol bor");
         }
 
-        List<Long> picked = QuestionPicker.pick(idsByTopic, req.questionCount(), random);
-        TestSession session = newSession(userId, subject, req.mode() == null ? TestMode.LEARNING : req.mode());
+        TestMode mode = req.mode() == null ? TestMode.LEARNING : req.mode();
+        List<Long> picked = QuestionPicker.pick(idsByTopic, req.questionCount(), random,
+                personalPriority(userId, mode, idsByTopic, difficulty));
+        if (mode == TestMode.LEARNING || mode == TestMode.FLASHCARD) {
+            // o'rganishda savollar osondan qiyinga (bir xil qiyinlikdagilar tasodifiy tartibda)
+            picked = new ArrayList<>(picked);
+            picked.sort(Comparator.comparing(difficulty::get));
+        }
+        TestSession session = newSession(userId, subject, mode);
         session.getTopics().addAll(topics);
+        if (mode == TestMode.BLITZ) {
+            session.setTimeLimitSeconds(BLITZ_SECONDS);
+        }
         addQuestions(session, picked);
+        sessionRepository.save(session);
+        return new CreatedResponse(session.getId());
+    }
+
+    /**
+     * Shaxsiy tanlov: mavzu ichida avval hali yechilmagan va takrorlash vaqti kelgan savollar, keyin qolganlari.
+     * O'rganish, kartochka va blitsda qiyinlik ham mavzu darajasiga moslanadi: yangi mavzuda – oson,
+     * o'rganilayotganida – o'rta, o'zlashtirilganida – qiyin savollar oldin. Imtihonda qiyinlik aralash qoladi.
+     */
+    private ToIntFunction<Long> personalPriority(Long userId, TestMode mode, Map<Long, List<Long>> idsByTopic,
+                                                 Map<Long, Difficulty> difficulty) {
+        ProgressService.PickContext ctx = progressService.pickContext(userId, idsByTopic.keySet());
+        Map<Long, Long> topicOf = new HashMap<>();
+        idsByTopic.forEach((topicId, ids) -> ids.forEach(id -> topicOf.put(id, topicId)));
+        boolean adaptive = mode != TestMode.EXAM;
+        Instant now = Instant.now();
+        return id -> {
+            Leitner.State st = ctx.states().get(id);
+            int tier = st == null || st.isDue(now) ? 0 : 1;
+            if (!adaptive) {
+                return tier;
+            }
+            Difficulty target = switch (ctx.levels().getOrDefault(topicOf.get(id), MasteryLevel.NEW)) {
+                case NEW -> Difficulty.EASY;
+                case LEARNING -> Difficulty.MEDIUM;
+                case MASTERED -> Difficulty.HARD;
+            };
+            return tier * 10 + Math.abs(difficulty.get(id).ordinal() - target.ordinal());
+        };
+    }
+
+    /**
+     * Takrorlash testi: intervalli takrorlash bo'yicha vaqti kelgan savollar (eng ko'p kechikkani oldin) yoki
+     * xatolar daftaridagi savollar (eng ko'p xato qilingani oldin).
+     */
+    @Transactional
+    public CreatedResponse createReview(Long userId, CreateReviewRequest req) {
+        TestMode mode = req.mode() == null ? TestMode.LEARNING : req.mode();
+        if (mode == TestMode.BLOCK) {
+            throw ApiException.badRequest("Takrorlash blok test bo'lishi mumkin emas");
+        }
+        Subject subject = subjectService.getActive(req.subjectId());
+        List<Long> ids = progressService.reviewQuestionIds(userId, subject.getId(), req.kind() == ReviewKind.MISTAKES);
+        if (ids.isEmpty()) {
+            throw ApiException.badRequest(req.kind() == ReviewKind.MISTAKES
+                    ? "Xatolar daftari bo'sh" : "Hozircha takrorlanadigan savollar yo'q");
+        }
+        List<Long> picked = new ArrayList<>(ids.subList(0, Math.min(req.questionCount(), ids.size())));
+        Collections.shuffle(picked, random);
+        TestSession session = newSession(userId, subject, mode);
+        if (mode == TestMode.BLITZ) {
+            session.setTimeLimitSeconds(BLITZ_SECONDS);
+        }
+        addQuestions(session, picked);
+        session.getQuestions().stream().map(sq -> sq.getQuestion().getTopic()).distinct()
+                .sorted(Comparator.comparingInt(Topic::getOrderIndex).thenComparing(Topic::getName))
+                .forEach(session.getTopics()::add);
         sessionRepository.save(session);
         return new CreatedResponse(session.getId());
     }
@@ -122,7 +199,7 @@ public class TestService {
                 }
                 List<Long> topicIds = topicRepository.findAllBySubjectIdAndActiveTrueOrderByOrderIndexAscNameAsc(subjectId)
                         .stream().map(Topic::getId).toList();
-                idsBySubject.put(subject, activeQuestionIdsByTopic(topicIds));
+                idsBySubject.put(subject, activeQuestionIdsByTopic(topicIds, null));
             }
             Map<Subject, Integer> available = new LinkedHashMap<>();
             idsBySubject.forEach((subject, byTopic) ->
@@ -168,7 +245,9 @@ public class TestService {
         List<Long> ids = new ArrayList<>(wrong.stream().map(sq -> sq.getQuestion().getId()).toList());
         Collections.shuffle(ids, random);
 
-        TestSession session = newSession(userId, old.getSubject(), old.getMode());
+        // Blitsdagi xatolar vaqt cheklovisiz, o'rganish rejimida qayta yechiladi
+        TestMode mode = old.getMode() == TestMode.BLITZ ? TestMode.LEARNING : old.getMode();
+        TestSession session = newSession(userId, old.getSubject(), mode);
         if (old.isBlock()) {
             // Guruhlar tartibi va ballari eski testdagidek qoladi, savollar soni – faqat xatolar
             Map<Long, Long> wrongBySubject = wrong.stream()
@@ -211,14 +290,18 @@ public class TestService {
         return session;
     }
 
-    /** [topicId -> faol savollar id lari] */
-    private Map<Long, List<Long>> activeQuestionIdsByTopic(Collection<Long> topicIds) {
+    /** [topicId -> faol savollar id lari]; {@code difficultyOut} berilsa – savollar qiyinligi ham yoziladi. */
+    private Map<Long, List<Long>> activeQuestionIdsByTopic(Collection<Long> topicIds,
+                                                         Map<Long, Difficulty> difficultyOut) {
         Map<Long, List<Long>> idsByTopic = new LinkedHashMap<>();
         if (topicIds.isEmpty()) {
             return idsByTopic;
         }
         for (Object[] row : questionRepository.findActiveIdsByTopicIds(topicIds)) {
             idsByTopic.computeIfAbsent((Long) row[0], k -> new ArrayList<>()).add((Long) row[1]);
+            if (difficultyOut != null) {
+                difficultyOut.put((Long) row[1], (Difficulty) row[2]);
+            }
         }
         return idsByTopic;
     }
@@ -276,19 +359,39 @@ public class TestService {
                 .filter(q -> q.getId().equals(req.sessionQuestionId()))
                 .findFirst()
                 .orElseThrow(() -> ApiException.notFound("Savol bu testga tegishli emas"));
-        if (s.getMode() == TestMode.LEARNING && sq.isAnswered()) {
+        if (s.getMode().revealsInstantly() && sq.isAnswered()) {
             throw ApiException.conflict("Bu savolga javob berilgan");
         }
-        if (!sq.optionIds().contains(req.optionId())) {
-            throw ApiException.badRequest("Variant bu savolga tegishli emas");
+        AnswerOption option;
+        boolean correct;
+        if (s.getMode() == TestMode.FLASHCARD) {
+            // Kartochka: o'quvchi o'zini baholaydi; tanlangan variant sifatida to'g'ri javob yoziladi
+            if (req.known() == null) {
+                throw ApiException.badRequest("«Bilardim» yoki «Bilmasdim» ni tanlang");
+            }
+            Long correctId = correctOptionId(sq);
+            Long shownId = correctId != null ? correctId : sq.optionIds().getFirst();
+            option = sq.getQuestion().getOptions().stream()
+                    .filter(o -> o.getId().equals(shownId))
+                    .findFirst()
+                    .orElseThrow(() -> ApiException.badRequest("Variant topilmadi"));
+            correct = req.known();
+        } else {
+            if (req.optionId() == null) {
+                throw ApiException.badRequest("Variant tanlanishi shart");
+            }
+            if (!sq.optionIds().contains(req.optionId())) {
+                throw ApiException.badRequest("Variant bu savolga tegishli emas");
+            }
+            option = sq.getQuestion().getOptions().stream()
+                    .filter(o -> o.getId().equals(req.optionId()))
+                    .findFirst()
+                    .orElseThrow(() -> ApiException.badRequest("Variant topilmadi"));
+            correct = option.isCorrect();
         }
-        AnswerOption option = sq.getQuestion().getOptions().stream()
-                .filter(o -> o.getId().equals(req.optionId()))
-                .findFirst()
-                .orElseThrow(() -> ApiException.badRequest("Variant topilmadi"));
 
         sq.setSelectedOption(option);
-        sq.setCorrect(option.isCorrect());
+        sq.setCorrect(correct);
         sq.setAnsweredAt(Instant.now());
 
         boolean reveal = canReveal(s, sq);
@@ -309,6 +412,15 @@ public class TestService {
 
     /** Vaqti tugaganda yakunlash vaqti – muddat (keyinroq ochilsa ham sarflangan vaqt oshib ketmaydi). */
     private void finishSession(TestSession s, Instant now) {
+        if (s.getMode() == TestMode.BLITZ) {
+            // Blitsda hamma savolga ulgurish shart emas: natijada faqat javob berilganlar qoladi
+            s.getQuestions().removeIf(sq -> !sq.isAnswered());
+            int index = 0;
+            for (SessionQuestion sq : s.getQuestions()) {
+                sq.setOrderIndex(index++);
+            }
+            s.setQuestionCount(s.getQuestions().size());
+        }
         int correct = (int) s.getQuestions().stream().filter(sq -> Boolean.TRUE.equals(sq.getCorrect())).count();
         s.setCorrectCount(correct);
         if (s.isBlock()) {
@@ -390,10 +502,13 @@ public class TestService {
         long duration = Duration.between(s.getStartedAt(),
                 s.getFinishedAt() != null ? s.getFinishedAt() : Instant.now()).toSeconds();
         double scorePercent = s.getScorePercent() != null ? s.getScorePercent() : percent(correct, s.getQuestionCount());
+        // XP JDBC orqali hisoblanadi – yakunlash (blitsda o'chirilgan savollar ham) bazaga yozilgan bo'lishi kerak
+        sessionRepository.flush();
+        int xp = progressService.sessionXp(s.getUser().getId(), s.getId());
         return new ResultView(s.getId(), subjectId(s), subjectName(s), s.getMode(),
                 s.getQuestionCount(), correct, wrong, unanswered, scorePercent, s.getScore(), s.getMaxScore(),
                 s.getStartedAt(), s.getFinishedAt(), duration, s.getTimeLimitSeconds(), s.isBlock() ? groupResults(s) : List.of(),
-                topicResults, qs.stream().map(sq -> toView(s, sq, true)).toList());
+                topicResults, qs.stream().map(sq -> toView(s, sq, true)).toList(), xp);
     }
 
     /** Blok test: fan guruhlari bo'yicha natija va ball (guruhlar test yaratilgandagi tartibda). */
@@ -466,9 +581,13 @@ public class TestService {
                 .toList();
     }
 
-    /** O'rganish rejimida javob berilgan savol, yoki yakunlangan test – to'g'ri javob ko'rsatilishi mumkin. */
+    /**
+     * To'g'ri javob ko'rsatilishi mumkinmi: yakunlangan test; o'rganish/blitsda javob berilgan savol;
+     * kartochkada – doim (o'quvchi javobni ko'rib, o'zini baholaydi; {@code correct} esa baholagandan keyin).
+     */
     private boolean canReveal(TestSession s, SessionQuestion sq) {
-        return s.isFinished() || (s.getMode() == TestMode.LEARNING && sq.isAnswered());
+        return s.isFinished() || s.getMode() == TestMode.FLASHCARD
+                || (s.getMode().revealsInstantly() && sq.isAnswered());
     }
 
     private QuestionView toView(TestSession s, SessionQuestion sq, boolean reveal) {

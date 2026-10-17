@@ -27,6 +27,8 @@ import {
   SchoolOutline,
   SunnyOutline,
   TimeOutline,
+  TrophyOutline,
+  AlertCircleOutline,
 } from '@vicons/ionicons5'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
@@ -46,6 +48,8 @@ const menuOptions = computed<MenuOption[]>(() => {
     { key: '/block/new', label: link('/block/new', 'Blok test'), icon: icon(SchoolOutline) },
     { key: '/history', label: link('/history', 'Tarix'), icon: icon(TimeOutline) },
     { key: '/stats', label: link('/stats', 'Statistika'), icon: icon(BarChartOutline) },
+    { key: '/achievements', label: link('/achievements', 'Yutuqlar'), icon: icon(TrophyOutline) },
+    { key: '/mistakes', label: link('/mistakes', 'Xatolar'), icon: icon(AlertCircleOutline) },
   ]
   if (auth.isAdmin) {
     items.push({
@@ -68,6 +72,8 @@ const activeKey = computed(() => {
   if (p.startsWith('/admin')) return p
   if (p.startsWith('/history')) return '/history'
   if (p.startsWith('/stats')) return '/stats'
+  if (p.startsWith('/achievements')) return '/achievements'
+  if (p.startsWith('/mistakes')) return '/mistakes'
   if (p.startsWith('/block')) return '/block/new'
   return '/'
 })

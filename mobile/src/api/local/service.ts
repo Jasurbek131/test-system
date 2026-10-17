@@ -1,6 +1,13 @@
 import type {
   AnswerResponse,
+  Difficulty,
+  MistakeItem,
   MyStats,
+  ProgressOverview,
+  ReviewKind,
+  SubjectDue,
+  SubjectProgress,
+  TopicProgress,
   Page,
   QuestionView,
   ResultView,
@@ -15,10 +22,15 @@ import type {
 import { AppError } from '../errors'
 import { db, defaultGroupName, type DbOption, type DbQuestion, type DbSession, type DbSessionGroup, type DbSessionQuestion, type DbSubject } from './db'
 import { allocate, percent, pickQuestions, shuffle } from './picker'
+import { answerXps, isDue, level, localDay, recentByTopic, replay, sessionBonus, type AnswerEvent, type QState } from './progress'
 
 const MAX_QUESTIONS = 500
 /** Blok testda har bir fan (guruh) ga 1 soat (backenddagi BLOCK_SECONDS_PER_SUBJECT kabi) */
 const BLOCK_SECONDS_PER_SUBJECT = 3600
+/** Blits rejimi davomiyligi (backenddagi BLITZ_SECONDS) */
+const BLITZ_SECONDS = 60
+/** Javob berilishi bilan to'g'ri javob ochiladigan va javobni o'zgartirib bo'lmaydigan rejimlar */
+const revealsInstantly = (mode: TestMode) => mode === 'LEARNING' || mode === 'BLITZ' || mode === 'FLASHCARD'
 
 // ---------------------------------------------------------------- fanlar
 
@@ -104,6 +116,7 @@ async function newSession(
   topicIds: number[],
   questionIds: number[],
   groups?: DbSessionGroup[],
+  timeLimitSeconds?: number,
 ): Promise<number> {
   const options = await db.options.where('questionId').anyOf(questionIds).toArray()
   const byQuestion = new Map<number, DbOption[]>()
@@ -121,6 +134,7 @@ async function newSession(
       correctCount: null,
       scorePercent: null,
       ...(groups ? { groups, score: null, maxScore: null, timeLimitSeconds: groups.length * BLOCK_SECONDS_PER_SUBJECT } : {}),
+      ...(timeLimitSeconds ? { timeLimitSeconds } : {}),
     } as never)
     await db.sessionQuestions.bulkAdd(
       questionIds.map((questionId, orderIndex) => ({
@@ -155,8 +169,34 @@ export async function createTest(req: { subjectId: number; topicIds: number[]; q
 
   const idsByTopic = new Map<number, number[]>()
   for (const q of questions) (idsByTopic.get(q.topicId) ?? idsByTopic.set(q.topicId, []).get(q.topicId)!).push(q.id)
-  const picked = pickQuestions(idsByTopic, req.questionCount)
-  return { id: await newSession(req.subjectId, req.mode ?? 'LEARNING', topicIds, picked) }
+  const mode = req.mode ?? 'LEARNING'
+  const difficulty = new Map(questions.map((q) => [q.id, q.difficulty]))
+  let picked = pickQuestions(idsByTopic, req.questionCount, Math.random, await personalPriority(mode, questions, difficulty))
+  // o'rganishda savollar osondan qiyinga (bir xil qiyinlikdagilar tasodifiy tartibda)
+  if (mode === 'LEARNING' || mode === 'FLASHCARD') picked = picked.sort((a, b) => RANK[difficulty.get(a)!] - RANK[difficulty.get(b)!])
+  return { id: await newSession(req.subjectId, mode, topicIds, picked, undefined, mode === 'BLITZ' ? BLITZ_SECONDS : undefined) }
+}
+
+const RANK: Record<Difficulty, number> = { EASY: 0, MEDIUM: 1, HARD: 2 }
+
+/**
+ * Backenddagi personalPriority: mavzu ichida avval yangi va takrorlash vaqti kelgan savollar; imtihondan boshqa
+ * rejimlarda qiyinlik mavzu darajasiga moslanadi (yangi – oson, o'rganilmoqda – o'rta, o'zlashtirilgan – qiyin).
+ */
+async function personalPriority(mode: TestMode, questions: DbQuestion[], difficulty: Map<number, Difficulty>) {
+  const topicIds = new Set(questions.map((q) => q.topicId))
+  const events = (await answerEvents()).filter((e) => topicIds.has(e.topicId))
+  const states = replay(events)
+  const recent = recentByTopic(events)
+  const topicOf = new Map(questions.map((q) => [q.id, q.topicId]))
+  const target: Record<string, number> = { NEW: 0, LEARNING: 1, MASTERED: 2 }
+  const now = Date.now()
+  return (id: number) => {
+    const st = states.get(id)
+    const tier = !st || isDue(st, now) ? 0 : 1
+    if (mode === 'EXAM') return tier
+    return tier * 10 + Math.abs(RANK[difficulty.get(id)!] - target[level(recent.get(topicOf.get(id)!))])
+  }
 }
 
 /**
@@ -236,7 +276,8 @@ export async function retryWrong(sessionId: number) {
     return { id: await newSession(null, 'BLOCK', [], ids, groups) }
   }
   const topicIds = [...new Set(existing.map((q) => q.topicId))]
-  return { id: await newSession(s.subjectId, s.mode, topicIds, ids) }
+  // Blitsdagi xatolar vaqt cheklovisiz, o'rganish rejimida qayta yechiladi
+  return { id: await newSession(s.subjectId, s.mode === 'BLITZ' ? 'LEARNING' : s.mode, topicIds, ids) }
 }
 
 // ---------------------------------------------------------------- yechish
@@ -321,8 +362,9 @@ async function load(sessionId: number): Promise<Loaded> {
   }
 }
 
+/** Yakunlangan test; o'rganish/blitsda javob berilgan savol; kartochkada – doim (baho esa baholagandan keyin) */
 function canReveal(s: DbSession, sq: DbSessionQuestion): boolean {
-  return s.status === 'FINISHED' || (s.mode === 'LEARNING' && sq.selectedOptionId !== null)
+  return s.status === 'FINISHED' || s.mode === 'FLASHCARD' || (revealsInstantly(s.mode) && sq.selectedOptionId !== null)
 }
 
 function correctOptionId(sq: DbSessionQuestion, options: DbOption[]): number | null {
@@ -384,7 +426,8 @@ export async function getSession(id: number): Promise<SessionView> {
   }
 }
 
-export async function answer(sessionId: number, sessionQuestionId: number, optionId: number): Promise<AnswerResponse> {
+/** Kartochka rejimida optionId o'rniga known («Bilardim» / «Bilmasdim») beriladi */
+export async function answer(sessionId: number, sessionQuestionId: number, optionId: number | null, known?: boolean): Promise<AnswerResponse> {
   // Tranzaksiyadan oldin: xato tranzaksiyani bekor qilgani uchun yakunlash ichkarida saqlanmay qolardi
   if (isExpired(await findSession(sessionId))) {
     await finish(sessionId)
@@ -395,19 +438,31 @@ export async function answer(sessionId: number, sessionQuestionId: number, optio
     if (s.status === 'FINISHED') throw new AppError('Test yakunlangan')
     const sq = await db.sessionQuestions.get(sessionQuestionId)
     if (!sq || sq.sessionId !== sessionId) throw new AppError('Savol bu testga tegishli emas')
-    if (s.mode === 'LEARNING' && sq.selectedOptionId !== null) throw new AppError('Bu savolga javob berilgan')
-    if (!sq.optionIds.includes(optionId)) throw new AppError('Variant bu savolga tegishli emas')
-    const option = await db.options.get(optionId)
-    if (!option) throw new AppError('Variant topilmadi')
+    if (revealsInstantly(s.mode) && sq.selectedOptionId !== null) throw new AppError('Bu savolga javob berilgan')
+    const options = await db.options.where('questionId').equals(sq.questionId).toArray()
+    let selected: number
+    let correct: boolean
+    if (s.mode === 'FLASHCARD') {
+      // o'quvchi o'zini baholaydi; tanlangan variant sifatida to'g'ri javob yoziladi (backenddagi kabi)
+      if (known === undefined) throw new AppError('«Bilardim» yoki «Bilmasdim» ni tanlang')
+      selected = correctOptionId(sq, options) ?? sq.optionIds[0]
+      correct = known
+    } else {
+      if (optionId === null) throw new AppError('Variant tanlanishi shart')
+      if (!sq.optionIds.includes(optionId)) throw new AppError('Variant bu savolga tegishli emas')
+      const option = options.find((o) => o.id === optionId)
+      if (!option) throw new AppError('Variant topilmadi')
+      selected = optionId
+      correct = option.correct
+    }
 
-    const updated: DbSessionQuestion = { ...sq, selectedOptionId: optionId, correct: option.correct, answeredAt: new Date().toISOString() }
+    const updated: DbSessionQuestion = { ...sq, selectedOptionId: selected, correct, answeredAt: new Date().toISOString() }
     await db.sessionQuestions.put(updated)
     const reveal = canReveal(s, updated)
-    const options = await db.options.where('questionId').equals(sq.questionId).toArray()
     const question = await db.questions.get(sq.questionId)
     return {
       sessionQuestionId: sq.id,
-      selectedOptionId: optionId,
+      selectedOptionId: selected,
       answered: true,
       correct: reveal ? updated.correct : null,
       correctOptionId: reveal ? correctOptionId(updated, options) : null,
@@ -440,7 +495,7 @@ function groupResults(s: DbSession, sqs: DbSessionQuestion[], questions: Map<num
   })
 }
 
-function buildResult(l: Loaded): ResultView {
+function buildResult(l: Loaded): Omit<ResultView, 'xp'> {
   const s = l.session
   const sqs = l.sqs.filter((sq) => l.questions.has(sq.questionId))
   const correct = sqs.filter((sq) => sq.correct === true).length
@@ -485,7 +540,14 @@ function buildResult(l: Loaded): ResultView {
 export async function finish(sessionId: number): Promise<ResultView> {
   const s = await findSession(sessionId)
   if (s.status !== 'FINISHED') {
-    const sqs = await db.sessionQuestions.where('sessionId').equals(sessionId).toArray()
+    let sqs = await db.sessionQuestions.where('sessionId').equals(sessionId).sortBy('orderIndex')
+    if (s.mode === 'BLITZ') {
+      // Blitsda hamma savolga ulgurish shart emas: natijada faqat javob berilganlar qoladi
+      await db.sessionQuestions.bulkDelete(sqs.filter((sq) => sq.selectedOptionId === null).map((sq) => sq.id))
+      sqs = sqs.filter((sq) => sq.selectedOptionId !== null).map((sq, orderIndex) => ({ ...sq, orderIndex }))
+      await db.sessionQuestions.bulkPut(sqs)
+      s.questionCount = sqs.length
+    }
     const correct = sqs.filter((sq) => sq.correct === true).length
     // Vaqti tugagan bo'lsa yakunlash vaqti – muddat (keyinroq ochilsa ham sarflangan vaqt oshib ketmaydi)
     const d = deadline(s)
@@ -493,6 +555,7 @@ export async function finish(sessionId: number): Promise<ResultView> {
       status: 'FINISHED',
       finishedAt: new Date(d !== null && Date.now() > d ? d : Date.now()).toISOString(),
       correctCount: correct,
+      questionCount: s.questionCount,
       scorePercent: percent(correct, s.questionCount),
     }
     if (s.mode === 'BLOCK') {
@@ -504,13 +567,22 @@ export async function finish(sessionId: number): Promise<ResultView> {
     }
     await db.sessions.update(sessionId, changes)
   }
-  return buildResult(await load(sessionId))
+  return withXp(buildResult(await load(sessionId)))
 }
 
 export async function result(sessionId: number): Promise<ResultView> {
   const l = await load(sessionId)
   if (l.session.status !== 'FINISHED') throw new AppError('Test hali yakunlanmagan')
-  return buildResult(l)
+  return withXp(buildResult(l))
+}
+
+/** Shu testda olingan XP (24 soat qoidasi butun tarix bo'yicha, backenddagi sessionXp kabi) */
+async function withXp(r: Omit<ResultView, 'xp'>): Promise<ResultView> {
+  const events = await answerEvents()
+  const xps = answerXps(events)
+  const s = await findSession(r.id)
+  const answersXp = events.reduce((sum, e, i) => sum + (e.sessionId === r.id ? xps[i] : 0), 0)
+  return { ...r, xp: answersXp + (s.status === 'FINISHED' ? sessionBonus(s.mode, s.questionCount, s.scorePercent) : 0) }
 }
 
 export async function history(page: number, size: number): Promise<Page<SessionSummary>> {
@@ -557,8 +629,8 @@ export async function clearHistory(): Promise<void> {
 // ---------------------------------------------------------------- statistika
 
 /**
- * Backend bilan bir xil qoida: yakunlangan testlar va o'rganish rejimidagi javoblar hisoblanadi,
- * davom etayotgan imtihondagi javoblar hisoblanmaydi.
+ * Backend bilan bir xil qoida: yakunlangan testlar va o'rganish/blits rejimidagi javoblar hisoblanadi,
+ * davom etayotgan imtihondagi javoblar va kartochkalar (o'zi baholagan) hisoblanmaydi.
  */
 export async function myStats(): Promise<MyStats> {
   await finishExpired()
@@ -576,7 +648,13 @@ export async function myStats(): Promise<MyStats> {
 
   const counted = sqs.filter((sq) => {
     const s = sessionById.get(sq.sessionId)
-    return sq.selectedOptionId !== null && !!s && (s.status === 'FINISHED' || s.mode === 'LEARNING') && questionById.has(sq.questionId)
+    return (
+      sq.selectedOptionId !== null &&
+      !!s &&
+      (s.status === 'FINISHED' || s.mode === 'LEARNING' || s.mode === 'BLITZ') &&
+      s.mode !== 'FLASHCARD' &&
+      questionById.has(sq.questionId)
+    )
   })
   const finished = sessions.filter((s) => s.status === 'FINISHED')
   const avg = finished.length ? finished.reduce((sum, s) => sum + (s.scorePercent ?? 0), 0) / finished.length : 0
@@ -617,4 +695,227 @@ export async function myStats(): Promise<MyStats> {
       .sort((a, b) => a.subjectName.localeCompare(b.subjectName) || a.order - b.order)
       .map(({ order: _order, ...rest }) => rest),
   }
+}
+
+// ---------------------------------------------------------------- progress (backenddagi ProgressService)
+
+/**
+ * Hisobga olinadigan javoblar vaqt bo'yicha: yakunlangan testlar va javobi darhol ochiladigan rejimlar
+ * (o'rganish, blits, kartochka); davom etayotgan imtihondagi javoblar kirmaydi.
+ */
+async function answerEvents(): Promise<AnswerEvent[]> {
+  const [sessions, sqs, questions] = await Promise.all([db.sessions.toArray(), db.sessionQuestions.toArray(), db.questions.toArray()])
+  const sessionById = new Map(sessions.map((x) => [x.id, x]))
+  const questionById = new Map(questions.map((q) => [q.id, q]))
+  const events: (AnswerEvent & { sqId: number })[] = []
+  for (const sq of sqs) {
+    const s = sessionById.get(sq.sessionId)
+    const q = questionById.get(sq.questionId)
+    if (!s || !q || sq.selectedOptionId === null || !sq.answeredAt) continue
+    if (s.status !== 'FINISHED' && !revealsInstantly(s.mode)) continue
+    events.push({
+      sqId: sq.id,
+      sessionId: s.id,
+      questionId: q.id,
+      correct: sq.correct === true,
+      at: new Date(sq.answeredAt).getTime(),
+      selectedOptionId: sq.selectedOptionId,
+      mode: s.mode,
+      topicId: q.topicId,
+      subjectId: q.subjectId,
+    })
+  }
+  return events.sort((a, b) => a.at - b.at || a.sqId - b.sqId)
+}
+
+export async function createReview(req: { subjectId: number; kind: ReviewKind; questionCount: number; mode: TestMode }) {
+  const mode = req.mode ?? 'LEARNING'
+  if (mode === 'BLOCK') throw new AppError("Takrorlash blok test bo'lishi mumkin emas")
+  await getSubject(req.subjectId)
+  const states = replay((await answerEvents()).filter((e) => e.subjectId === req.subjectId))
+  const now = Date.now()
+  const entries = [...states.entries()]
+  const ids = (
+    req.kind === 'MISTAKES'
+      ? entries.filter(([, st]) => !st.lastCorrect).sort(([, a], [, b]) => b.wrong - a.wrong || b.lastAt - a.lastAt)
+      : entries.filter(([, st]) => isDue(st, now)).sort(([, a], [, b]) => a.due - b.due)
+  ).map(([id]) => id)
+  if (!ids.length) throw new AppError(req.kind === 'MISTAKES' ? "Xatolar daftari bo'sh" : "Hozircha takrorlanadigan savollar yo'q")
+  const picked = shuffle(ids.slice(0, Math.max(1, req.questionCount)))
+  const questions = (await db.questions.bulkGet(picked)).filter((q): q is DbQuestion => !!q)
+  const topics = (await db.topics.bulkGet([...new Set(questions.map((q) => q.topicId))])).filter((t) => !!t)
+  const topicIds = topics.sort((a, b) => a!.orderIndex - b!.orderIndex || a!.name.localeCompare(b!.name)).map((t) => t!.id)
+  return { id: await newSession(req.subjectId, mode, topicIds, picked, undefined, mode === 'BLITZ' ? BLITZ_SECONDS : undefined) }
+}
+
+export async function subjectProgress(subjectId: number): Promise<SubjectProgress> {
+  const subject = await getSubject(subjectId)
+  const topics = await listTopics(subjectId)
+  const events = (await answerEvents()).filter((e) => e.subjectId === subjectId)
+  const states = replay(events)
+  const recent = recentByTopic(events)
+  const topicOf = new Map(events.map((e) => [e.questionId, e.topicId]))
+  const now = Date.now()
+  const per = new Map<number, { seen: number; answered: number; due: number; mistakes: number }>()
+  for (const [qid, st] of states) {
+    const tid = topicOf.get(qid)!
+    const c = per.get(tid) ?? { seen: 0, answered: 0, due: 0, mistakes: 0 }
+    c.seen++
+    c.answered += st.answered
+    if (isDue(st, now)) c.due++
+    if (!st.lastCorrect) c.mistakes++
+    per.set(tid, c)
+  }
+  const result: TopicProgress[] = topics.map((t) => {
+    const c = per.get(t.id) ?? { seen: 0, answered: 0, due: 0, mistakes: 0 }
+    const r = recent.get(t.id)
+    return {
+      topicId: t.id,
+      topicName: t.name,
+      total: t.questionCount,
+      ...c,
+      recentAnswered: r?.length ?? 0,
+      recentCorrect: r?.filter(Boolean).length ?? 0,
+      level: level(r),
+    }
+  })
+  return {
+    subjectId,
+    subjectName: subject.name,
+    due: result.reduce((n, t) => n + t.due, 0),
+    mistakes: result.reduce((n, t) => n + t.mistakes, 0),
+    topics: result,
+  }
+}
+
+export async function progressOverview(): Promise<ProgressOverview> {
+  await finishExpired()
+  const events = await answerEvents()
+  const now = Date.now()
+  const weekAgo = now - 7 * 24 * 3600 * 1000
+  const days = new Map<string, { answered: number; correct: number; xp: number }>()
+  const day = (key: string) => days.get(key) ?? days.set(key, { answered: 0, correct: 0, xp: 0 }).get(key)!
+  let xp = 0
+  let xpWeek = 0
+  let answered = 0
+  let correct = 0
+  let flashcards = 0
+  const xps = answerXps(events)
+  for (const [i, e] of events.entries()) {
+    const x = xps[i]
+    const d = day(localDay(e.at))
+    d.answered++
+    d.xp += x
+    if (e.correct) d.correct++
+    xp += x
+    if (e.at > weekAgo) xpWeek += x
+    if (e.mode === 'FLASHCARD') flashcards++
+    else {
+      answered++
+      if (e.correct) correct++
+    }
+  }
+  let perfect = 0
+  let blitzBest = 0
+  let bestBlock = 0
+  const finished = (await db.sessions.toArray()).filter((s) => s.status === 'FINISHED')
+  for (const s of finished) {
+    const bonus = sessionBonus(s.mode, s.questionCount, s.scorePercent)
+    const at = new Date(s.finishedAt ?? s.startedAt).getTime()
+    if (bonus > 0) {
+      day(localDay(at)).xp += bonus
+      xp += bonus
+      if (at > weekAgo) xpWeek += bonus
+    }
+    if (s.mode !== 'FLASHCARD' && s.questionCount >= 10 && (s.scorePercent ?? 0) >= 100) perfect++
+    if (s.mode === 'BLITZ') blitzBest = Math.max(blitzBest, s.correctCount ?? 0)
+    if (s.mode === 'BLOCK') bestBlock = Math.max(bestBlock, s.scorePercent ?? 0)
+  }
+  const from = localDay(now - 365 * 24 * 3600 * 1000)
+
+  const states = replay(events)
+  const subjectOf = new Map(events.map((e) => [e.questionId, e.subjectId]))
+  const per = new Map<number, { due: number; mistakes: number }>()
+  for (const [qid, st] of states) {
+    const sid = subjectOf.get(qid)!
+    const c = per.get(sid) ?? { due: 0, mistakes: 0 }
+    if (isDue(st, now)) c.due++
+    if (!st.lastCorrect) c.mistakes++
+    per.set(sid, c)
+  }
+  const recent = recentByTopic(events)
+  const [subjects, topics, questions] = await Promise.all([db.subjects.toArray(), db.topics.toArray(), db.questions.toArray()])
+  const withQuestions = new Set(questions.map((q) => q.topicId))
+  let masteredTopics = 0
+  const masteredSubjects: string[] = []
+  const subjectDue: SubjectDue[] = []
+  for (const s of [...subjects].sort((a, b) => a.name.localeCompare(b.name))) {
+    const list = topics.filter((t) => t.subjectId === s.id && withQuestions.has(t.id))
+    if (!list.length) continue
+    const mastered = list.filter((t) => level(recent.get(t.id)) === 'MASTERED').length
+    masteredTopics += mastered
+    if (mastered === list.length) masteredSubjects.push(s.name)
+    const c = per.get(s.id) ?? { due: 0, mistakes: 0 }
+    subjectDue.push({ subjectId: s.id, subjectName: s.name, due: c.due, mistakes: c.mistakes, masteredTopics: mastered, topicCount: list.length })
+  }
+  return {
+    xp,
+    xpWeek,
+    days: [...days.entries()]
+      .filter(([k]) => k >= from)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, d]) => ({ date, ...d })),
+    totals: {
+      answered,
+      correct,
+      finishedTests: finished.length,
+      perfectTests: perfect,
+      blitzBest,
+      flashcards,
+      bestBlockPercent: bestBlock,
+      masteredTopics,
+      masteredSubjects,
+    },
+    dueCount: subjectDue.reduce((n, x) => n + x.due, 0),
+    mistakesCount: subjectDue.reduce((n, x) => n + x.mistakes, 0),
+    subjects: subjectDue,
+  }
+}
+
+/** Xatolar daftari: oxirgi javobi xato bo'lgan savollar, eng yangisi birinchi */
+export async function mistakes(subjectId?: number | null): Promise<MistakeItem[]> {
+  await finishExpired()
+  const events = (await answerEvents()).filter((e) => !subjectId || e.subjectId === subjectId)
+  const states: Map<number, QState> = replay(events)
+  const lastSelected = new Map<number, number>()
+  for (const e of events) {
+    if (e.mode === 'FLASHCARD') lastSelected.delete(e.questionId)
+    else lastSelected.set(e.questionId, e.selectedOptionId)
+  }
+  const ids = [...states.entries()].filter(([, st]) => !st.lastCorrect).sort(([, a], [, b]) => b.lastAt - a.lastAt).map(([id]) => id)
+  if (!ids.length) return []
+  const [qs, opts, subjects] = await Promise.all([db.questions.bulkGet(ids), db.options.where('questionId').anyOf(ids).toArray(), db.subjects.toArray()])
+  const topics = (await db.topics.bulkGet([...new Set(qs.filter((q) => !!q).map((q) => q!.topicId))])).filter((t) => !!t)
+  const topicName = new Map(topics.map((t) => [t!.id, t!.name]))
+  const subjectName = new Map(subjects.map((x) => [x.id, x.name]))
+  const optionText = new Map(opts.map((o) => [o.id, o.text]))
+  return qs
+    .filter((q): q is DbQuestion => !!q)
+    .map((q) => {
+      const st = states.get(q.id)!
+      const sel = lastSelected.get(q.id)
+      return {
+        questionId: q.id,
+        subjectId: q.subjectId,
+        subjectName: subjectName.get(q.subjectId) ?? '',
+        topicId: q.topicId,
+        topicName: topicName.get(q.topicId) ?? '',
+        text: q.text,
+        explanation: q.explanation,
+        correctAnswer: opts.find((o) => o.questionId === q.id && o.correct)?.text ?? null,
+        yourAnswer: sel === undefined ? null : (optionText.get(sel) ?? null),
+        wrongCount: st.wrong,
+        lastAnsweredAt: new Date(st.lastAt).toISOString(),
+      }
+    })
 }
